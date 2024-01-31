@@ -1,9 +1,13 @@
-import pprint
+import os
+import subprocess
 
 import typer
 import whatthepatch
 
 app = typer.Typer()
+
+BASE_DIR = "/home/jingfelix/workspace/repos/pPatch"
+PATCH_STORE_DIR = "_patches"
 
 
 @app.command()
@@ -14,14 +18,40 @@ def show(filename: str):
 
     diffes = whatthepatch.parse_patch(content)
 
-    # for diff in diffes:
-    #     if
-    #     changes = diff.changes
+    for diff in diffes:
+        typer.echo(f"diff: {diff.header}")
 
 
 @app.command()
 def trace(filename: str):
     typer.echo(f"tracing patch {filename}")
+
+
+@app.command()
+def getpatches(filename: str):
+    typer.echo(f"Get patches of {filename}")
+
+    output: str = subprocess.run(
+        ["git", "log", "-p", "--", filename], capture_output=True
+    ).stdout.decode("utf-8")
+
+    # 将 output 按照 commit ${hash}开头的行分割
+    patches: list[str] = []
+    for line in output.splitlines():
+        if line.startswith("commit "):
+            patches.append(line + "\n")
+        else:
+            patches[-1] += line + "\n"
+
+    typer.echo(f"Get {len(patches)} patches for {filename}")
+
+    for patch in patches:
+        sha = patch.splitlines()[0].split(" ")[1]
+
+        patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")
+
+        with open(patch_path, mode="w+", encoding="utf-8") as (f):
+            f.write(patch)
 
 
 # diff(

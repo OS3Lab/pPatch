@@ -22,4 +22,4 @@ build-backend = "pdm.backend"
 ppatch = "ppatch.__init__:app"
 
 [tool.pdm]
-package-type = "library"
+distribution = true

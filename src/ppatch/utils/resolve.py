@@ -3,10 +3,10 @@ from whatthepatch.patch import Change
 from ppatch.model import File, Line
 
 
-def apply_change(changes: list[Change], target: str, flag: bool = False) -> list[Line]:
+def apply_change(
+    changes: list[Change], target: list[Line], flag: bool = False
+) -> list[Line]:
     """Apply a diff to a target string."""
-
-    file = File(target)
 
     for change in changes:
         if change.old == change.new:
@@ -17,13 +17,13 @@ def apply_change(changes: list[Change], target: str, flag: bool = False) -> list
             position = next(
                 (
                     line
-                    for line in file.line_list
+                    for line in target
                     if line.index == change.new - 1 and not line.changed
                 ),
                 None,
             )
             if position:
-                file.line_list.insert(
+                target.insert(
                     position.index,
                     Line(
                         index=position.index,
@@ -38,7 +38,7 @@ def apply_change(changes: list[Change], target: str, flag: bool = False) -> list
             position = next(
                 (
                     line
-                    for line in file.line_list
+                    for line in target
                     if line.index == change.old - 1 and not line.changed and line.status
                 ),
                 None,
@@ -48,7 +48,7 @@ def apply_change(changes: list[Change], target: str, flag: bool = False) -> list
 
     # 保留所有 status 为 Ture 的行
     new_line_list = []
-    for index, line in enumerate(file.line_list):
+    for index, line in enumerate(target):
         if line.status:
             new_line_list.append(
                 Line(index=index, content=line.content + "\n", changed=line.changed)
