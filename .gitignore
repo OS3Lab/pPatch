@@ -163,3 +163,4 @@ kernel/
 patches/
 
 *.patch
+.pdm-python
