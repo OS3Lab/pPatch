@@ -4,6 +4,9 @@ import subprocess
 import typer
 import whatthepatch
 
+from ppatch.model import File
+from ppatch.utils.resolve import apply_change
+
 app = typer.Typer()
 
 BASE_DIR = "/home/jingfelix/workspace/repos/pPatch"
@@ -12,6 +15,10 @@ PATCH_STORE_DIR = "_patches"
 
 @app.command()
 def show(filename: str):
+    if not os.path.exists(filename):
+        typer.echo(f"Warning: {filename} not found!")
+        return
+
     content = ""
     with open(filename, mode="r", encoding="utf-8") as (f):
         content = f.read()
@@ -23,12 +30,86 @@ def show(filename: str):
 
 
 @app.command()
-def trace(filename: str):
-    typer.echo(f"tracing patch {filename}")
+def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
+    if not os.path.exists(filename):
+        typer.echo(f"Warning: {filename} not found!")
+        return
+
+    typer.echo(f"tracing patch {filename} from {from_commit} to {to_commit}")
+
+    output: str = subprocess.run(
+        [
+            "git",
+            "log",
+            "--pretty=format:%H",
+            "--",
+            filename,
+        ],
+        capture_output=True,
+    ).stdout.decode("utf-8")
+
+    sha_list = output.splitlines()
+
+    # 在 sha_list 中找到 from_commit 和 to_commit 的位置
+    from_index = sha_list.index(from_commit) if from_commit else -1
+    if from_index == -1:
+        typer.echo(f"from_commit {from_commit} not found")
+        return
+
+    # 注意此处需要多选一个，包含 from commit 前面的一个 commit，用于 checkout
+    sha_list = sha_list[: from_index + 2]
+
+    typer.echo(f"Get {len(sha_list)} commits for {filename}")
+
+    # checkout 到 from_commit 前面的一个 commit
+    subprocess.run(
+        ["git", "checkout", sha_list.pop(), "--", filename], capture_output=True
+    )
+
+    origin_file = File(file_path=filename)
+    # 首先将最后一个 patch 以 flag=True 的方式 apply
+    patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha_list.pop()}.patch")
+    for diff in whatthepatch.parse_patch(patch_path):
+        if diff.header.old_path == filename or diff.header.new_path == filename:
+            new_line_list, _ = apply_change(
+                diff.changes, origin_file.line_list, flag=True
+            )
+            break
+
+    confict_list: list[list[line]] = []
+
+    # 注意这里需要反向
+    for sha in sha_list.reverse():
+        patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")
+
+        with open(patch_path, mode="r", encoding="utf-8") as (f):
+            diffes = whatthepatch.parse_patch(f.read())
+
+            for diff in diffes:
+                if diff.header.old_path == filename or diff.header.new_path == filename:
+                    new_line_list, flag_line_list = apply_change(
+                        diff.changes, new_line_list, flag=True
+                    )
+                    break
+
+        assert isinstance(flag_line_list, list)
+
+        if len(flag_line_list) > 0:
+            confict_list.append(flag_line_list)
+            typer.echo(f"Conflict found in {sha}")
+            for line in flag_line_list:
+                typer.echo(f"{line.index + 1}: {line.content}")
+
+    typer.echo(f"Conflict count: {len(confict_list)}")
+    typer.echo(f"Conflict list: {confict_list}")
 
 
 @app.command()
 def getpatches(filename: str):
+    if not os.path.exists(filename):
+        typer.echo(f"Warning: {filename} not found!")
+        return
+
     typer.echo(f"Get patches of {filename}")
 
     output: str = subprocess.run(
