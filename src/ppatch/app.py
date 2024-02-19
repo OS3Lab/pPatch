@@ -1,10 +1,11 @@
 import os
+import re
 import subprocess
 
 import typer
 import whatthepatch
 
-from ppatch.model import File
+from ppatch.model import File, Line
 from ppatch.utils.resolve import apply_change
 
 app = typer.Typer()
@@ -15,6 +16,8 @@ PATCH_STORE_DIR = "_patches"
 
 @app.command()
 def show(filename: str):
+    """
+    Show detail of a patch file."""
     if not os.path.exists(filename):
         typer.echo(f"Warning: {filename} not found!")
         return
@@ -76,7 +79,7 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
             )
             break
 
-    confict_list: list[list[line]] = []
+    confict_list: list[list[Line]] = []
 
     # 注意这里需要反向
     for sha in sha_list.reverse():
@@ -105,7 +108,10 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
 
 
 @app.command()
-def getpatches(filename: str):
+def getpatches(filename: str, expression: str = None):
+    """
+    Get patches of a file.
+    """
     if not os.path.exists(filename):
         typer.echo(f"Warning: {filename} not found!")
         return
@@ -126,13 +132,19 @@ def getpatches(filename: str):
 
     typer.echo(f"Get {len(patches)} patches for {filename}")
 
+    pattern = re.compile(expression) if expression is not None else None
+
     for patch in patches:
         sha = patch.splitlines()[0].split(" ")[1]
 
+        if pattern is not None and pattern.search(patch) is None:
+            typer.echo(f"Patch {sha} found with expression {expression}")
+
         patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")
 
-        with open(patch_path, mode="w+", encoding="utf-8") as (f):
-            f.write(patch)
+        if not os.path.exists(patch_path):
+            with open(patch_path, mode="w+", encoding="utf-8") as (f):
+                f.write(patch)
 
 
 # diff(
