@@ -10,7 +10,7 @@ from ppatch.utils.resolve import apply_change
 
 app = typer.Typer()
 
-BASE_DIR = "/home/jingfelix/workspace/repos/pPatch"
+BASE_DIR = "/home/laboratory/workspace/exps/ppatch"
 PATCH_STORE_DIR = "_patches"
 
 
@@ -59,30 +59,38 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
         typer.echo(f"from_commit {from_commit} not found")
         return
 
-    # 注意此处需要多选一个，包含 from commit 前面的一个 commit，用于 checkout
+    # 注意此处需要多选一个，包含 from commit，用于 checkout
     sha_list = sha_list[: from_index + 2]
 
     typer.echo(f"Get {len(sha_list)} commits for {filename}")
 
-    # checkout 到 from_commit 前面的一个 commit
+    # checkout 到 from_commit 的前一个 commit
     subprocess.run(
-        ["git", "checkout", sha_list.pop(), "--", filename], capture_output=True
+        ["git", "checkout", sha_list.pop(), "--", filename],
+        capture_output=True,
     )
 
     origin_file = File(file_path=filename)
+    new_line_list = origin_file.line_list
     # 首先将最后一个 patch 以 flag=True 的方式 apply
-    patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha_list.pop()}.patch")
-    for diff in whatthepatch.parse_patch(patch_path):
+    from_commit_sha = sha_list.pop()
+    assert from_commit_sha == from_commit
+    typer.echo(f"Apply patch {from_commit_sha} to {filename}")
+    patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{from_commit_sha}.patch")
+    for diff in whatthepatch.parse_patch(
+        open(patch_path, mode="r", encoding="utf-8").read()
+    ):
         if diff.header.old_path == filename or diff.header.new_path == filename:
-            new_line_list, _ = apply_change(
-                diff.changes, origin_file.line_list, flag=True
-            )
-            break
+            new_line_list, _ = apply_change(diff.changes, new_line_list, flag=True)
+
+        else:
+            typer.echo(f"Do not match with {filename}, skip")
 
     confict_list: list[list[Line]] = []
 
     # 注意这里需要反向
-    for sha in sha_list.reverse():
+    sha_list.reverse()
+    for sha in sha_list:
         patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")
 
         with open(patch_path, mode="r", encoding="utf-8") as (f):
@@ -91,9 +99,10 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
             for diff in diffes:
                 if diff.header.old_path == filename or diff.header.new_path == filename:
                     new_line_list, flag_line_list = apply_change(
-                        diff.changes, new_line_list, flag=True
+                        diff.changes, new_line_list
                     )
-                    break
+                else:
+                    typer.echo(f"Do not match with {filename}, skip")
 
         assert isinstance(flag_line_list, list)
 
@@ -103,8 +112,48 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
             for line in flag_line_list:
                 typer.echo(f"{line.index + 1}: {line.content}")
 
+    # 写入文件
+    with open(filename, mode="w+", encoding="utf-8") as (f):
+        for line in new_line_list:
+            if line.status:
+                f.write(line.content + "\n")
+
     typer.echo(f"Conflict count: {len(confict_list)}")
     typer.echo(f"Conflict list: {confict_list}")
+
+
+@app.command()
+def apply(filename: str, patch_path: str):
+    """
+    Apply a patch to a file.
+    """
+    if not os.path.exists(filename):
+        typer.echo(f"Warning: {filename} not found!")
+        return
+
+    if not os.path.exists(patch_path):
+        typer.echo(f"Warning: {patch_path} not found!")
+        return
+
+    typer.echo(f"Apply patch {patch_path} to {filename}")
+
+    origin_file = File(file_path=filename)
+    new_line_list = origin_file.line_list
+
+    with open(patch_path, mode="r", encoding="utf-8") as (f):
+        diffes = whatthepatch.parse_patch(f.read())
+
+        for diff in diffes:
+            if diff.header.old_path == filename or diff.header.new_path == filename:
+                new_line_list, _ = apply_change(diff.changes, new_line_list)
+            else:
+                typer.echo(f"Do not match with {filename}, skip")
+
+    # 写入文件
+    with open(filename, mode="w+", encoding="utf-8") as (f):
+        for line in new_line_list:
+            if line.status:
+                f.write(line.content + "\n")
 
 
 @app.command()
@@ -137,7 +186,7 @@ def getpatches(filename: str, expression: str = None):
     for patch in patches:
         sha = patch.splitlines()[0].split(" ")[1]
 
-        if pattern is not None and pattern.search(patch) is None:
+        if pattern is not None and pattern.search(patch) is not None:
             typer.echo(f"Patch {sha} found with expression {expression}")
 
         patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")

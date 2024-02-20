@@ -18,4 +18,7 @@ class File(object):
 
         with open(file_path, mode="r", encoding="utf-8") as f:
             for i, line in enumerate(f):
-                self.line_list.append(Line(i, line.rstrip("\n")))
+                self.line_list.append(Line(index=i, content=line.rstrip("\n")))
+
+    def __str__(self) -> str:
+        return "".join([str(line) for line in self.line_list])
