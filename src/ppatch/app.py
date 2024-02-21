@@ -18,7 +18,8 @@ PATCH_STORE_DIR = "_patches"
 @app.command()
 def show(filename: str):
     """
-    Show detail of a patch file."""
+    Show detail of a patch file.
+    """
     if not os.path.exists(filename):
         typer.echo(f"Warning: {filename} not found!")
         return
@@ -60,7 +61,7 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
         typer.echo(f"from_commit {from_commit} not found")
         return
 
-    # 注意此处需要多选一个，包含 from commit，用于 checkout
+    # 注意此处需要多选一个，包含 from commit 的前一个，用于 checkout
     sha_list = sha_list[: from_index + 2]
 
     typer.echo(f"Get {len(sha_list)} commits for {filename}")
@@ -72,30 +73,27 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
     )
 
     origin_file = File(file_path=filename)
-    new_line_list = origin_file.line_list
+    new_line_list = []
     # 首先将最后一个 patch 以 flag=True 的方式 apply
     from_commit_sha = sha_list.pop()
     assert from_commit_sha == from_commit
     typer.echo(f"Apply patch {from_commit_sha} to {filename}")
     patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{from_commit_sha}.patch")
-    # for diff in whatthepatch.parse_patch(
-    #     open(patch_path, mode="r", encoding="utf-8").read()
-    # ):
-    #     if diff.header.old_path == filename or diff.header.new_path == filename:
-    #         try:
-    #             new_line_list, _ = apply_change(diff.changes, new_line_list, flag=True)
-    #         except Exception as e:
-    #             typer.echo(f"Apply patch {from_commit_sha} failed")
-    #             typer.echo(f"Error: {e}")
-    #             return
 
-    #     else:
-    #         typer.echo(f"Do not match with {filename}, skip")
-    new_line_list, _ = _apply(
-        patch_path, filename, new_line_list, from_commit_sha, flag=True
-    )
-    if new_line_list is None:
-        return
+    for diff in whatthepatch.parse_patch(
+        open(patch_path, mode="r", encoding="utf-8").read()
+    ):
+        if diff.header.old_path == filename or diff.header.new_path == filename:
+            try:
+                new_line_list, _ = apply_change(
+                    diff.changes, origin_file.line_list, flag=True
+                )
+            except Exception as e:
+                typer.echo(f"Apply patch {from_commit_sha} failed")
+                typer.echo(f"Error: {e}")
+                return
+        else:
+            typer.echo(f"Do not match with {filename}, skip")
 
     confict_list: list[list[Line]] = []
 
@@ -110,9 +108,15 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
 
             for diff in diffes:
                 if diff.header.old_path == filename or diff.header.new_path == filename:
-                    new_line_list, flag_line_list = apply_change(
-                        diff.changes, new_line_list
-                    )
+                    try:
+                        new_line_list, flag_line_list = apply_change(
+                            diff.changes, new_line_list
+                        )
+                    except Exception as e:
+                        typer.echo(f"Apply patch {sha} failed")
+                        typer.echo(f"Error: {e}")
+                        typer.echo(f"Last commit: {sha_list[sha_list.index(sha) - 1]}")
+                        return
                 else:
                     typer.echo(f"Do not match with {filename}, skip")
 
@@ -152,15 +156,15 @@ def apply(filename: str, patch_path: str):
     origin_file = File(file_path=filename)
     new_line_list = origin_file.line_list
 
-    # with open(patch_path, mode="r", encoding="utf-8") as (f):
-    #     diffes = whatthepatch.parse_patch(f.read())
+    with open(patch_path, mode="r", encoding="utf-8") as (f):
+        diffes = whatthepatch.parse_patch(f.read())
 
-    #     for diff in diffes:
-    #         if diff.header.old_path == filename or diff.header.new_path == filename:
-    #             new_line_list, _ = apply_change(diff.changes, new_line_list)
-    #         else:
-    #             typer.echo(f"Do not match with {filename}, skip")
-    new_line_list, _ = _apply(patch_path, filename, new_line_list, "default")
+        for diff in diffes:
+            if diff.header.old_path == filename or diff.header.new_path == filename:
+                new_line_list, _ = apply_change(diff.changes, new_line_list)
+            else:
+                typer.echo(f"Do not match with {filename}, skip")
+    # new_line_list, _ = _apply(patch_path, filename, new_line_list, "default")
 
     # 写入文件
     with open(filename, mode="w+", encoding="utf-8") as (f):
@@ -208,50 +212,3 @@ def getpatches(filename: str, expression: str = None, save: bool = True):
             if not os.path.exists(patch_path):
                 with open(patch_path, mode="w+", encoding="utf-8") as (f):
                     f.write(patch)
-
-
-# diff(
-#     header=header(
-#         index_path=None,
-#         old_path="kernel/cgroup/cgroup-v1.c",
-#         old_version="ee93b6e895874",
-#         new_path="kernel/cgroup/cgroup-v1.c",
-#         new_version="527917c0b30be",
-#     ),
-#     changes=[
-#         Change(
-#             old=912,
-#             new=912,
-#             line="\topt = fs_parse(fc, cgroup1_fs_parameters, param, &result);",
-#             hunk=1,
-#         ),
-#         Change(old=913, new=913, line="\tif (opt == -ENOPARAM) {", hunk=1),
-#         Change(
-#             old=914,
-#             new=914,
-#             line='\t\tif (strcmp(param->key, "source") == 0) {',
-#             hunk=1,
-#         ),
-#         Change(
-#             old=None,
-#             new=915,
-#             line="\t\t\tif (param->type != fs_value_is_string)",
-#             hunk=1,
-#         ),
-#         Change(
-#             old=None,
-#             new=916,
-#             line='\t\t\t\treturn invalf(fc, "Non-string source");',
-#             hunk=1,
-#         ),
-#         Change(old=915, new=917, line="\t\t\tif (fc->source)", hunk=1),
-#         Change(
-#             old=916,
-#             new=918,
-#             line='\t\t\t\treturn invalf(fc, "Multiple sources not supported");',
-#             hunk=1,
-#         ),
-#         Change(old=917, new=919, line="\t\t\tfc->source = param->string;", hunk=1),
-#     ],
-#     text='diff --git a/kernel/cgroup/cgroup-v1.c b/kernel/cgroup/cgroup-v1.c\nindex ee93b6e895874..527917c0b30be 100644\n--- a/kernel/cgroup/cgroup-v1.c\n+++ b/kernel/cgroup/cgroup-v1.c\n@@ -912,6 +912,8 @@ int cgroup1_parse_param(struct fs_context *fc, struct fs_parameter *param)\n \topt = fs_parse(fc, cgroup1_fs_parameters, param, &result);\n \tif (opt == -ENOPARAM) {\n \t\tif (strcmp(param->key, "source") == 0) {\n+\t\t\tif (param->type != fs_value_is_string)\n+\t\t\t\treturn invalf(fc, "Non-string source");\n \t\t\tif (fc->source)\n \t\t\t\treturn invalf(fc, "Multiple sources not supported");\n \t\t\tfc->source = param->string;\n-- \ncgit \n\n',
-# )
