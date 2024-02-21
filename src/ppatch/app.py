@@ -6,6 +6,7 @@ import typer
 import whatthepatch
 
 from ppatch.model import File, Line
+from ppatch.utils.common import _apply
 from ppatch.utils.resolve import apply_change
 
 app = typer.Typer()
@@ -77,14 +78,24 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
     assert from_commit_sha == from_commit
     typer.echo(f"Apply patch {from_commit_sha} to {filename}")
     patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{from_commit_sha}.patch")
-    for diff in whatthepatch.parse_patch(
-        open(patch_path, mode="r", encoding="utf-8").read()
-    ):
-        if diff.header.old_path == filename or diff.header.new_path == filename:
-            new_line_list, _ = apply_change(diff.changes, new_line_list, flag=True)
+    # for diff in whatthepatch.parse_patch(
+    #     open(patch_path, mode="r", encoding="utf-8").read()
+    # ):
+    #     if diff.header.old_path == filename or diff.header.new_path == filename:
+    #         try:
+    #             new_line_list, _ = apply_change(diff.changes, new_line_list, flag=True)
+    #         except Exception as e:
+    #             typer.echo(f"Apply patch {from_commit_sha} failed")
+    #             typer.echo(f"Error: {e}")
+    #             return
 
-        else:
-            typer.echo(f"Do not match with {filename}, skip")
+    #     else:
+    #         typer.echo(f"Do not match with {filename}, skip")
+    new_line_list, _ = _apply(
+        patch_path, filename, new_line_list, from_commit_sha, flag=True
+    )
+    if new_line_list is None:
+        return
 
     confict_list: list[list[Line]] = []
 
@@ -93,6 +104,7 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
     for sha in sha_list:
         patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")
 
+        flag_line_list = []
         with open(patch_path, mode="r", encoding="utf-8") as (f):
             diffes = whatthepatch.parse_patch(f.read())
 
@@ -140,14 +152,15 @@ def apply(filename: str, patch_path: str):
     origin_file = File(file_path=filename)
     new_line_list = origin_file.line_list
 
-    with open(patch_path, mode="r", encoding="utf-8") as (f):
-        diffes = whatthepatch.parse_patch(f.read())
+    # with open(patch_path, mode="r", encoding="utf-8") as (f):
+    #     diffes = whatthepatch.parse_patch(f.read())
 
-        for diff in diffes:
-            if diff.header.old_path == filename or diff.header.new_path == filename:
-                new_line_list, _ = apply_change(diff.changes, new_line_list)
-            else:
-                typer.echo(f"Do not match with {filename}, skip")
+    #     for diff in diffes:
+    #         if diff.header.old_path == filename or diff.header.new_path == filename:
+    #             new_line_list, _ = apply_change(diff.changes, new_line_list)
+    #         else:
+    #             typer.echo(f"Do not match with {filename}, skip")
+    new_line_list, _ = _apply(patch_path, filename, new_line_list, "default")
 
     # 写入文件
     with open(filename, mode="w+", encoding="utf-8") as (f):
@@ -157,7 +170,7 @@ def apply(filename: str, patch_path: str):
 
 
 @app.command()
-def getpatches(filename: str, expression: str = None):
+def getpatches(filename: str, expression: str = None, save: bool = True):
     """
     Get patches of a file.
     """
@@ -191,9 +204,10 @@ def getpatches(filename: str, expression: str = None):
 
         patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")
 
-        if not os.path.exists(patch_path):
-            with open(patch_path, mode="w+", encoding="utf-8") as (f):
-                f.write(patch)
+        if save:
+            if not os.path.exists(patch_path):
+                with open(patch_path, mode="w+", encoding="utf-8") as (f):
+                    f.write(patch)
 
 
 # diff(

@@ -29,6 +29,16 @@ def apply_change(
 
         elif change.new is None and change.old is not None:
             index = change.old - 1 - del_count + add_count
+
+            if change.old > len(target):
+                raise Exception(
+                    f'context line {change.old}, "{change.line}" does not exist in source'
+                )
+            if target[index].content != change.line:
+                raise Exception(
+                    f'context line {change.old}, "{change.line}" does not match "{target[change.old - 1 - del_count].content}"'
+                )
+
             # 如果被修改行有标记，则将其添加进标记列表
             if target[index].flag:
                 flag_line_list.append(target[index])
