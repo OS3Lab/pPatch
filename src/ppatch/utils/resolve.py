@@ -52,7 +52,9 @@ def apply_change(
     new_line_list = []
     for index, line in enumerate(target):
         new_line_list.append(
-            Line(index=index, content=line.content, changed=line.changed)
+            Line(
+                index=index, content=line.content, changed=line.changed, flag=line.flag
+            )
         )
 
     return new_line_list, flag_line_list

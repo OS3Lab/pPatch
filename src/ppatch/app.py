@@ -6,7 +6,6 @@ import typer
 import whatthepatch
 
 from ppatch.model import File, Line
-from ppatch.utils.common import _apply
 from ppatch.utils.resolve import apply_change
 
 app = typer.Typer()
@@ -112,6 +111,9 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
                         new_line_list, flag_line_list = apply_change(
                             diff.changes, new_line_list
                         )
+                        typer.echo(
+                            f"Apply patch {sha} to {filename}: {len(new_line_list)}"
+                        )
                     except Exception as e:
                         typer.echo(f"Apply patch {sha} failed")
                         typer.echo(f"Error: {e}")
@@ -133,6 +135,11 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
         for line in new_line_list:
             if line.status:
                 f.write(line.content + "\n")
+
+    with open(filename + ".ppatch", mode="a+", encoding="utf-8") as (f):
+        for line in new_line_list:
+            if line.status:
+                f.write(f"{line.index + 1}: {line.content} {line.flag}\n")
 
     typer.echo(f"Conflict count: {len(confict_list)}")
     typer.echo(f"Conflict list: {confict_list}")
