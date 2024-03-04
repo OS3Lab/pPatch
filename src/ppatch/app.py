@@ -6,6 +6,7 @@ import typer
 import whatthepatch
 
 from ppatch.model import File, Line
+from ppatch.utils.common import process_title
 from ppatch.utils.resolve import apply_change
 
 app = typer.Typer()
@@ -34,12 +35,12 @@ def show(filename: str):
 
 
 @app.command()
-def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
+def trace(filename: str, from_commit: str = ""):
     if not os.path.exists(filename):
         typer.echo(f"Warning: {filename} not found!")
         return
 
-    typer.echo(f"tracing patch {filename} from {from_commit} to {to_commit}")
+    typer.echo(f"tracing patch {filename} from {from_commit}")
 
     output: str = subprocess.run(
         [
@@ -77,7 +78,9 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
     from_commit_sha = sha_list.pop()
     assert from_commit_sha == from_commit
     typer.echo(f"Apply patch {from_commit_sha} to {filename}")
-    patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{from_commit_sha}.patch")
+    patch_path = os.path.join(
+        BASE_DIR, PATCH_STORE_DIR, f"{from_commit_sha}-{process_title(filename)}.patch"
+    )
 
     for diff in whatthepatch.parse_patch(
         open(patch_path, mode="r", encoding="utf-8").read()
@@ -99,7 +102,9 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
     # 注意这里需要反向
     sha_list.reverse()
     for sha in sha_list:
-        patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")
+        patch_path = os.path.join(
+            BASE_DIR, PATCH_STORE_DIR, f"{sha}-{process_title(filename)}.patch"
+        )
 
         flag_line_list = []
         with open(patch_path, mode="r", encoding="utf-8") as (f):
@@ -118,6 +123,14 @@ def trace(filename: str, from_commit: str = "", to_commit: str = "HEAD"):
                         typer.echo(f"Apply patch {sha} failed")
                         typer.echo(f"Error: {e}")
                         typer.echo(f"Last commit: {sha_list[sha_list.index(sha) - 1]}")
+
+                        with open(
+                            filename + f".{sha}", mode="w+", encoding="utf-8"
+                        ) as (f):
+                            for line in new_line_list:
+                                if line.status:
+                                    f.write(line.content + "\n")
+
                         return
                 else:
                     typer.echo(f"Do not match with {filename}, skip")
@@ -213,7 +226,9 @@ def getpatches(filename: str, expression: str = None, save: bool = True):
         if pattern is not None and pattern.search(patch) is not None:
             typer.echo(f"Patch {sha} found with expression {expression}")
 
-        patch_path = os.path.join(BASE_DIR, PATCH_STORE_DIR, f"{sha}.patch")
+        patch_path = os.path.join(
+            BASE_DIR, PATCH_STORE_DIR, f"{sha}-{process_title(filename)}.patch"
+        )
 
         if save:
             if not os.path.exists(patch_path):

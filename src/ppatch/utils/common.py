@@ -36,3 +36,10 @@ def _apply(
 
         else:
             typer.echo(f"Do not match with {filename}, skip")
+
+
+def process_title(filename: str):
+    """
+    Process the file name to make it suitable for path
+    """
+    return "".join([letter for letter in filename if letter.isalnum()])
