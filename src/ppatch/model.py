@@ -1,4 +1,5 @@
 from pydantic import BaseModel
+from whatthepatch.patch import Change
 
 
 class Line(BaseModel):
@@ -22,3 +23,12 @@ class File(object):
 
     def __str__(self) -> str:
         return "".join([str(line) for line in self.line_list])
+
+
+class Hunk(BaseModel):
+    index: int
+    context: list[Change]
+    middle: list[Change]
+    post: list[Change]
+
+    all_: list[Change]
