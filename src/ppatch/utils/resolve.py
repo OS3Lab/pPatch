@@ -59,41 +59,52 @@ def apply_change(
             )
         )
 
-    # 假设 len(context) 不为0
-    # 然后对每个hunk进行处理
+    # 然后对每个hunk进行处理，添加偏移
     changes: list[Change] = []
     for hunk in hunk_list:
-        # 在原文中查找前置上下文的位置
-        if len(hunk.context) > 0:
-            positiones = find_list_positions(
-                [line.content for line in target],
-                [change.line for change in hunk.context],
-            )
-        else:
-            # TODO: 处理代码开头的处理
-            positiones = []
-        if len(positiones) == 0:
-            raise Exception(f'context lines "{hunk.context}" do not exist in source')
 
-        # 计算offset
+        def cal_offsets(target: list[Line], changes: list[Change]) -> list[int]:
+            pos_list = find_list_positions(
+                [line.content for line in target],
+                [change.line for change in changes],
+            )
+            if len(pos_list) == 0:
+                raise Exception(f"context lines do not exist in source")
+
+            offset_list = []
+            if len(changes) == 0:
+                offset_list = pos_list
+            else:
+                for position in pos_list:
+                    offset = position + 1 - changes[0].old
+                    offset_list.append(offset)
+
+            return offset_list
+
+        offset_context = cal_offsets(target, hunk.context)
+        offset_post = cal_offsets(target, hunk.post)
+
+        offset_list = list(set(offset_context) & set(offset_post))
+        if len(offset_list) == 0:
+            raise Exception("offsets do not intersect")
+
+        # 计算最小 offset
         min_offset = None
-        for position in positiones:
-            offset = position + 1 - hunk.context[0].old
+        for offset in offset_list:
             if min_offset is None or abs(offset) < abs(min_offset):
                 min_offset = offset
 
-        offset = min_offset
         for change in hunk.all_:
             changes.append(
                 Change(
                     hunk=change.hunk,
-                    old=change.old + offset if change.old is not None else None,
-                    new=change.new + offset if change.new is not None else None,
+                    old=change.old + min_offset if change.old is not None else None,
+                    new=change.new + min_offset if change.new is not None else None,
                     line=change.line,
                 )
             )
 
-    # 注意这里的changes应该使用从hunk_list中拼接出来的（也就是修改过行号的）
+    # 注意这里的 changes 应该使用从 hunk_list 中拼接出来的（也就是修改过行号的）
     for change in changes:
         if change.old is not None and change.line is not None:
             if change.old > len(target):

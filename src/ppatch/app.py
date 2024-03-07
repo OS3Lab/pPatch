@@ -91,7 +91,7 @@ def trace(filename: str, from_commit: str = ""):
                     diff.changes, origin_file.line_list, flag=True
                 )
             except Exception as e:
-                typer.echo(f"Apply patch {from_commit_sha} failed")
+                typer.echo(f"Failed to apply patch {from_commit_sha}")
                 typer.echo(f"Error: {e}")
                 return
         else:
@@ -120,9 +120,8 @@ def trace(filename: str, from_commit: str = ""):
                             f"Apply patch {sha} to {filename}: {len(new_line_list)}"
                         )
                     except Exception as e:
-                        typer.echo(f"Apply patch {sha} failed")
+                        typer.echo(f"Failed to apply patch {sha}")
                         typer.echo(f"Error: {e}")
-                        typer.echo(f"Last commit: {sha_list[sha_list.index(sha) - 1]}")
 
                         with open(
                             filename + f".{sha}", mode="w+", encoding="utf-8"
