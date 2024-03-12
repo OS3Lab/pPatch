@@ -18,6 +18,7 @@ def apply_change(
         if change.hunk not in hunk_indexes:
             hunk_indexes.append(change.hunk)
 
+    # TODO: 支持 -F 参数
     # 将changes按照hunk分组，注意同一个 hunk 中的 change 要进行分类，前三行要放入前置上下文，中间的要放入中间上下文，后三行要放入后置上下文
     hunk_list: list[Hunk] = []
     for hunk_index in hunk_indexes:
