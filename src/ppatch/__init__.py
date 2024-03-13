@@ -1,1 +1,1 @@
-from ppatch.app import app
+from .app import app

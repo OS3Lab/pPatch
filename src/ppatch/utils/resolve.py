@@ -1,7 +1,7 @@
 from whatthepatch.patch import Change
 
-from ppatch.model import Hunk, Line
-from ppatch.utils.common import find_list_positions
+from ..model import Hunk, Line
+from .common import find_list_positions
 
 
 def apply_change(

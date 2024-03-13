@@ -5,9 +5,9 @@ import subprocess
 import typer
 import whatthepatch
 
-from ppatch.model import File, Line
-from ppatch.utils.common import process_title
-from ppatch.utils.resolve import apply_change
+from .model import File, Line
+from .utils.common import process_title
+from .utils.resolve import apply_change
 
 app = typer.Typer()
 
