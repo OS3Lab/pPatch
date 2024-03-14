@@ -7,6 +7,7 @@ import whatthepatch
 
 from .model import File, Line
 from .utils.common import process_title
+from .utils.parse import parse_patch
 from .utils.resolve import apply_change
 
 app = typer.Typer()
@@ -28,10 +29,13 @@ def show(filename: str):
     with open(filename, mode="r", encoding="utf-8") as (f):
         content = f.read()
 
-    diffes = whatthepatch.parse_patch(content)
+    patch = parse_patch(content)
 
-    for diff in diffes:
-        typer.echo(f"diff: {diff.header}")
+    typer.echo(f"Patch: {filename}")
+    typer.echo(f"Sha: {patch.sha}")
+    typer.echo(f"Author: {patch.author}")
+    typer.echo(f"Date: {(patch.date).strftime('%Y-%m-%d %H:%M:%S')}")
+    typer.echo(f"Subject: {patch.subject}")
 
 
 @app.command()
@@ -51,7 +55,7 @@ def trace(filename: str, from_commit: str = ""):
             filename,
         ],
         capture_output=True,
-    ).stdout.decode("utf-8")
+    ).stdout.decode("utf-8", errors="ignore")
 
     sha_list = output.splitlines()
 
@@ -205,7 +209,7 @@ def getpatches(filename: str, expression: str = None, save: bool = True):
 
     output: str = subprocess.run(
         ["git", "log", "-p", "--", filename], capture_output=True
-    ).stdout.decode("utf-8")
+    ).stdout.decode("utf-8", errors="ignore")
 
     # 将 output 按照 commit ${hash}开头的行分割
     patches: list[str] = []

@@ -45,7 +45,7 @@ def apply_change(
         # 注意把后置上下文反转回来
         hunk_post = list(reversed(hunk_post))
 
-        # 最后获取中间上下文
+        # 最后获取中间代码
         for change in hunk_changes:
             if change not in hunk_context and change not in hunk_post:
                 hunk_middle.append(change)
