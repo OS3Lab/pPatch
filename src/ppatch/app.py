@@ -37,9 +37,14 @@ def show(filename: str):
     typer.echo(f"Date: {(patch.date).strftime('%Y-%m-%d %H:%M:%S')}")
     typer.echo(f"Subject: {patch.subject}")
 
+    for diff in patch.diff:
+        typer.echo(f"Diff: {diff.header.old_path} -> {diff.header.new_path}")
+        # for i, change in enumerate(diff.changes):
+        #     typer.echo(f"{i+1}: {change.hunk}")
+
 
 @app.command()
-def trace(filename: str, from_commit: str = ""):
+def trace(filename: str, from_commit: str = "", flag_hunk: int = -1):
     if not os.path.exists(filename):
         typer.echo(f"Warning: {filename} not found!")
         return
@@ -92,7 +97,7 @@ def trace(filename: str, from_commit: str = ""):
         if diff.header.old_path == filename or diff.header.new_path == filename:
             try:
                 new_line_list, _ = apply_change(
-                    diff.changes, origin_file.line_list, flag=True
+                    diff.changes, origin_file.line_list, flag=True, flag_hunk=flag_hunk
                 )
             except Exception as e:
                 typer.echo(f"Failed to apply patch {from_commit_sha}")

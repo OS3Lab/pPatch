@@ -5,7 +5,7 @@ from .common import find_list_positions
 
 
 def apply_change(
-    changes: list[Change], target: list[Line], flag: bool = False
+    changes: list[Change], target: list[Line], flag: bool = False, flag_hunk: int = -1
 ) -> tuple[list[Line], list[Line]]:
     """Apply a diff to a target string."""
 
@@ -95,7 +95,7 @@ def apply_change(
             if min_offset is None or abs(offset) < abs(min_offset):
                 min_offset = offset
 
-        for change in hunk.all_:
+        for change in hunk.middle:
             changes.append(
                 Change(
                     hunk=change.hunk,
@@ -131,7 +131,9 @@ def apply_change(
                     content=change.line,
                     changed=True,
                     status=True,
-                    flag=flag,
+                    flag=True
+                    if flag and (change.hunk == flag_hunk or flag_hunk == -1)
+                    else False,
                 ),
             )
             add_count += 1
@@ -145,6 +147,15 @@ def apply_change(
 
             del target[index]
             del_count += 1
+        else:
+            # 对其他行也要标记 flag
+            index = change.old - 1 - del_count + add_count
+            assert index == change.new - 1
+            target[index].flag = (
+                True
+                if flag and (change.hunk == flag_hunk or flag_hunk == -1)
+                else False
+            )
 
     new_line_list = []
     for index, line in enumerate(target):
