@@ -1,5 +1,6 @@
 from whatthepatch.patch import Change
 
+from ppatch.app import MAX_DIFF_LINES
 from ppatch.model import Hunk, Line
 from ppatch.utils.common import find_list_positions
 
@@ -44,6 +45,9 @@ def apply_change(
 
         # 注意把后置上下文反转回来
         hunk_post = list(reversed(hunk_post))
+
+        assert len(hunk_context) <= MAX_DIFF_LINES
+        assert len(hunk_post) <= MAX_DIFF_LINES
 
         # 最后获取中间代码
         for change in hunk_changes:
@@ -154,11 +158,22 @@ def apply_change(
             target[index].flag = (
                 True
                 if flag and (change.hunk == flag_hunk or flag_hunk == -1)
-                else False
+                else target[index].flag
             )
 
     new_line_list = []
     for index, line in enumerate(target):
+        # TODO: 判断是否在 Flag 行附近进行了修改
+        # 如果该行为 changed，且前后行为flag，则也加入标记列表
+        if line.changed and not line.flag:
+            if index > 0 and target[index - 1].flag:
+                line.flag = True
+            if index < len(target) - 1 and target[index + 1].flag:
+                line.flag = True
+
+            if line.flag:
+                flag_line_list.append(line)
+
         new_line_list.append(
             Line(
                 index=index, content=line.content, changed=line.changed, flag=line.flag
