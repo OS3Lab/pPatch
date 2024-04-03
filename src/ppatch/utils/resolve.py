@@ -1,14 +1,26 @@
-from whatthepatch.patch import Change
-
 from ppatch.app import MAX_DIFF_LINES
-from ppatch.model import Hunk, Line
+from ppatch.model import Change, Hunk, Line
 from ppatch.utils.common import find_list_positions
 
 
 def apply_change(
-    changes: list[Change], target: list[Line], flag: bool = False, flag_hunk: int = -1
+    changes: list[Change],
+    target: list[Line],
+    reverse: bool = False,
+    flag: bool = False,
+    flag_hunk: int = -1,
 ) -> tuple[list[Line], list[Line]]:
     """Apply a diff to a target string."""
+
+    # 如果反向，则交换所有的 old 和 new
+    if reverse:
+        for index, change in enumerate(changes):
+            changes[index] = Change(
+                hunk=change.hunk,
+                old=change.new,
+                new=change.old,
+                line=change.line,
+            )
 
     # TODO: 这里有个巨大的问题：diff 信息中的行号与实际行号不一致
     # 一种修复方式：搜索 diff 每个 hunk 的上下文行，然后修改标记

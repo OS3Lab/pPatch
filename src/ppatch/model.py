@@ -1,5 +1,6 @@
+from typing import Optional
+
 from pydantic import BaseModel
-from whatthepatch.patch import Change
 
 
 class Line(BaseModel):
@@ -25,6 +26,13 @@ class File(object):
         return "".join([str(line) for line in self.line_list])
 
 
+class Change(BaseModel):
+    old: Optional[int] = None
+    new: Optional[int] = None
+    line: str
+    hunk: int
+
+
 class Hunk(BaseModel):
     index: int
     context: list[Change]
@@ -32,3 +40,17 @@ class Hunk(BaseModel):
     post: list[Change]
 
     all_: list[Change]
+
+
+class Header(BaseModel):
+    index_path: Optional[str] = None
+    old_path: str
+    old_version: str
+    new_path: str
+    new_version: str
+
+
+class Diff(BaseModel):
+    header: Header
+    changes: list[Change]
+    text: str
