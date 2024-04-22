@@ -102,7 +102,7 @@ def auto(filename: str):
         # trace
         # ApplyResult => trace(ApplyResult.flag_line_list.hunk)
         # ApplyResult => {sha: dict[sha,ApplyResult]}
-        recursive_apply_result: dict[str, list[dict[str, list[ApplyResult]]]] = {}
+        recursive_apply_result: dict[str, list[dict[str, ApplyResult]]] = {}
         for hunk in hunk_list:
             apply_result = trace(file_name, from_commit=sha_for_sure, flag_hunk=hunk)
             # recursive(file_name,apply_result)
@@ -134,6 +134,10 @@ def auto(filename: str):
                 # typer.echo("in patch_result2")
                 for sha, patch_result in patch_result2.items():
                     if len(patch_result.flag_line_list) != 0:
+                        typer.secho(
+                            patch_result.failed_hunk_list, fg="green", bold=True
+                        )
+
                         hunk_list = list(
                             set(
                                 item.hunk

@@ -79,7 +79,7 @@ def trace(filename: str, from_commit: str = "", flag_hunk: int = -1):
         else:
             typer.echo(f"Do not match with {filename}, skip")
 
-    sha_confict_list: dict[str, list[ApplyResult]] = {}
+    sha_confict_list: dict[str, ApplyResult] = {}
     confict_list: dict[str, list[Line]] = {}
 
     # 注意这里需要反向
@@ -97,6 +97,8 @@ def trace(filename: str, from_commit: str = "", flag_hunk: int = -1):
 
             for diff_ in diffes:
                 diff = Diff(**unpack(diff_))
+
+                # 这里其实只会产生一个 ApplyResult
                 if diff.header.old_path == filename or diff.header.new_path == filename:
                     try:
                         apply_result = apply_change(diff.changes, new_line_list)
@@ -109,6 +111,8 @@ def trace(filename: str, from_commit: str = "", flag_hunk: int = -1):
                         typer.echo(
                             f"Apply patch {sha} to {filename}: {len(new_line_list)}"
                         )
+                        sha_confict_list[sha] = apply_result
+
                     except Exception as e:
                         typer.echo(f"Failed to apply patch {sha}")
                         typer.echo(f"Error: {e}")
@@ -131,8 +135,6 @@ def trace(filename: str, from_commit: str = "", flag_hunk: int = -1):
             typer.echo(f"Conflict found in {sha}")
             for line in flag_line_list:
                 typer.echo(f"{line.index + 1}: {line.content}")
-
-        sha_confict_list[sha] = apply_result
 
     # 写入文件
     with open(filename, mode="w+", encoding="utf-8") as (f):
