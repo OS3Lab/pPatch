@@ -6,7 +6,7 @@ import whatthepatch
 
 from ppatch.app import app
 from ppatch.config import settings
-from ppatch.model import Diff, File, Line
+from ppatch.model import ApplyResult, Diff, File, Line
 from ppatch.utils.common import process_title, unpack
 from ppatch.utils.resolve import apply_change
 
@@ -79,6 +79,7 @@ def trace(filename: str, from_commit: str = "", flag_hunk: int = -1):
         else:
             typer.echo(f"Do not match with {filename}, skip")
 
+    sha_confict_list: dict[str, list[ApplyResult]] = {}
     confict_list: dict[str, list[Line]] = {}
 
     # 注意这里需要反向
@@ -131,6 +132,8 @@ def trace(filename: str, from_commit: str = "", flag_hunk: int = -1):
             for line in flag_line_list:
                 typer.echo(f"{line.index + 1}: {line.content}")
 
+        sha_confict_list[sha] = apply_result
+
     # 写入文件
     with open(filename, mode="w+", encoding="utf-8") as (f):
         for line in new_line_list:
@@ -145,4 +148,4 @@ def trace(filename: str, from_commit: str = "", flag_hunk: int = -1):
     typer.echo(f"Conflict count: {len(confict_list)}")
     typer.echo(f"Conflict list: {confict_list}")
 
-    return confict_list
+    return sha_confict_list

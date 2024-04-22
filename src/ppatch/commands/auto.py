@@ -8,7 +8,9 @@ from ppatch.app import app
 from ppatch.commands.get import getpatches
 from ppatch.commands.trace import trace
 from ppatch.config import settings
+from ppatch.model import ApplyResult, Diff, File, Line
 from ppatch.utils.common import process_title
+from ppatch.utils.parse import parse_patch
 
 
 @app.command()
@@ -63,8 +65,6 @@ def auto(filename: str):
     with open(filename, mode="r", encoding="utf-8") as (f):
         content = f.read()
 
-    from ppatch.utils.parse import parse_patch
-
     subject = parse_patch(content).subject
     for file_name, hunk_list in fail_file_list.items():
         typer.echo(
@@ -96,6 +96,103 @@ def auto(filename: str):
         typer.echo(f"Found correspond patch {sha_for_sure} to {file_name}")
         typer.echo(f"Hunk list: {hunk_list}")
 
+        # hunklist [1,2,3]
+        # ApplyResult = trace(hunklist)
+        # ApplyResult => {sha: ApplyResult}
+        # trace
+        # ApplyResult => trace(ApplyResult.flag_line_list.hunk)
+        # ApplyResult => {sha: dict[sha,ApplyResult]}
+        recursive_apply_result: dict[str, list[dict[str, list[ApplyResult]]]] = {}
         for hunk in hunk_list:
-            conflict_list = trace(file_name, from_commit=sha_for_sure, flag_hunk=hunk)
-            typer.echo(f"Conflict list: {conflict_list}")
+            apply_result = trace(file_name, from_commit=sha_for_sure, flag_hunk=hunk)
+            # recursive(file_name,apply_result)
+            for sha, patch_result in apply_result.items():
+                typer.echo(f"Sha: {sha}")
+                if sha not in recursive_apply_result:
+                    recursive_apply_result[sha] = []
+                if len(patch_result.flag_line_list) != 0:
+                    typer.echo(f"Value: {patch_result.flag_line_list}")
+                    hunk_list = list(
+                        set(
+                            item.hunk
+                            for item in patch_result.flag_line_list
+                            if item.hunk is not None
+                        )
+                    )
+                    for hunk in hunk_list:
+                        # recursive(file_name,apply_result,recursive_apply_result)
+                        recursive_apply_result[sha].append(
+                            trace(file_name, from_commit=sha, flag_hunk=hunk)
+                        )
+
+        # ApplyResult => {sha: list[ApplyResult]}
+        # sha_list :list[str] = []
+        typer.echo(f"filename:{filename}")
+        for sha, patch_result in recursive_apply_result.items():
+            # typer.echo(f"Sha_echo: {sha}")
+            for patch_result2 in patch_result:
+                # typer.echo("in patch_result2")
+                for sha, patch_result in patch_result2.items():
+                    if len(patch_result.flag_line_list) != 0:
+                        hunk_list = list(
+                            set(
+                                item.hunk
+                                for item in patch_result.flag_line_list
+                                if item.hunk is not None
+                            )
+                        )
+                        for hunk in hunk_list:
+                            typer.echo(f"Sha_flag: {sha}: Hunk_flag: {hunk}")
+                            recursive_apply_result[sha].append(
+                                trace(file_name, from_commit=sha, flag_hunk=hunk)
+                            )
+                            # apply_result3 = trace(file_name,from_commit=sha,flag_hunk=hunk)
+                            # print_recursive_apply_result(apply_result3)
+                    else:
+                        typer.echo(f"Sha_no_flag: {sha}: Hunk_no_flag: None")
+                        # apply_result3 = trace(file_name,from_commit=sha)
+                        # print_recursive_apply_result(apply_result3)
+
+
+def recursive(
+    file_name, apply_result, recursive_apply_result: dict[str, list[ApplyResult]]
+):
+    for sha, patch_result in apply_result.items():
+        typer.echo(f"Sha_recursive: {sha}")
+        if len(patch_result.flag_line_list) != 0:
+            typer.echo(f"Value_recursive: {patch_result.flag_line_list}")
+            hunk_list = list(
+                set(
+                    item.hunk
+                    for item in patch_result.flag_line_list
+                    if item.hunk is not None
+                )
+            )
+            typer.echo(f"recursive Hunk_list: {hunk_list}")
+            if len(hunk_list) == 0:
+                typer.echo(f"hunk_list is none")
+                return recursive_apply_result[sha].append(
+                    trace(file_name, from_commit=sha)
+                )
+            for hunk in hunk_list:
+                apply_result2 = trace(file_name, from_commit=sha, flag_hunk=hunk)
+                typer.echo(f"Sha2: {sha}: Hunk2: {hunk}")
+                return recursive(file_name, apply_result2, recursive_apply_result)
+        else:
+            continue
+
+
+def print_recursive_apply_result(apply_result3):
+    for sha, patch_result in apply_result3.items():
+        typer.echo(f"Sha3: {sha}")
+        if len(patch_result.flag_line_list) != 0:
+            typer.echo(f"Value3: {patch_result.flag_line_list}")
+            hunk_list = list(
+                set(
+                    item.hunk
+                    for item in patch_result.flag_line_list
+                    if item.hunk is not None
+                )
+            )
+            for hunk in hunk_list:
+                typer.echo(f"Sha3: {sha}: Hunk3: {hunk}")
