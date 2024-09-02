@@ -9,8 +9,6 @@ logger = logging.getLogger()
 
 from ppatch.utils.common import post_executed
 
-__version__ = "0.0.5b3"
-
 app = typer.Typer(result_callback=post_executed, no_args_is_help=True)
 
 
@@ -23,6 +21,9 @@ def callback(verbose: bool = False, version: bool = False):
         logger.setLevel(logging.DEBUG)
 
     if version:
+
+        from ppatch.__version__ import __version__
+
         console = Console()
         console.print(f"ppatch version {__version__}")
         raise typer.Exit()
