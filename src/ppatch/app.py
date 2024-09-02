@@ -35,4 +35,4 @@ from ppatch.commands.get import getpatches
 from ppatch.commands.help import show_settings
 from ppatch.commands.show import show
 from ppatch.commands.symbol import getsymbol_command
-from ppatch.commands.trace import trace
+from ppatch.commands.trace import trace_command
