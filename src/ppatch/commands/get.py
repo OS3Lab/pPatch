@@ -8,7 +8,9 @@ from ppatch.utils.common import process_title
 
 
 @app.command("get")
-def getpatches(filename: str, expression: str = None, save: bool = True) -> list[str]:
+def getpatches(
+    filename: str, expression: str = None, save: bool = True
+) -> tuple[list[str], list[str]]:
     """
     Get patches of a file.
     """
@@ -34,14 +36,16 @@ def getpatches(filename: str, expression: str = None, save: bool = True) -> list
 
     pattern = re.compile(expression) if expression is not None else None
 
+    hit_list = []
     sha_list = []
     for patch in patches:
         sha = patch.splitlines()[0].split(" ")[1]
+        sha_list.append(sha)
 
         if pattern is not None and (
             pattern.search(patch) is not None or expression in patch
         ):
-            sha_list.append(sha)
+            hit_list.append(sha)
             logger.info(f"Patch {sha} found with expression {expression}")
 
         patch_path = os.path.join(
@@ -55,7 +59,7 @@ def getpatches(filename: str, expression: str = None, save: bool = True) -> list
                 with open(patch_path, mode="w+", encoding="utf-8") as (f):
                     f.write(patch)
 
-    if pattern and len(sha_list) == 0:
+    if pattern and len(hit_list) == 0:
         logger.error(f"No patch found with expression {expression}")
 
-    return sha_list
+    return hit_list, sha_list

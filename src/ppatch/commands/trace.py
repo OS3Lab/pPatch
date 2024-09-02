@@ -5,14 +5,16 @@ import whatthepatch
 
 from ppatch.app import app, logger
 from ppatch.config import settings
-from ppatch.model import ApplyResult, Diff, File
+from ppatch.model import ApplyResult, File
 from ppatch.utils.common import process_title
 from ppatch.utils.parse import wtp_diff_to_diff
 from ppatch.utils.resolve import apply_change
 
 
 @app.command()
-def trace(filename: str, from_commit: str = "", flag_hunk_list: list[int] = None):
+def trace_command(
+    filename: str, from_commit: str = "", flag_hunk_list: list[int] = None
+) -> dict[str, ApplyResult]:
     flag_hunk_list = [] if flag_hunk_list is None else flag_hunk_list
 
     if not os.path.exists(filename):
@@ -34,6 +36,15 @@ def trace(filename: str, from_commit: str = "", flag_hunk_list: list[int] = None
 
     sha_list = output.splitlines()
 
+    return trace(sha_list, filename, from_commit, flag_hunk_list)
+
+
+def trace(
+    sha_list: list[str],
+    filename: str,
+    from_commit: str = "",
+    flag_hunk_list: list[int] = None,
+) -> dict[str, ApplyResult]:
     # 在 sha_list 中找到 from_commit 和 to_commit 的位置
     from_index = sha_list.index(from_commit) if from_commit else -1
     if from_index == -1:

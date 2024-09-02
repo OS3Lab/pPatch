@@ -74,10 +74,10 @@ def auto(filename: str, output: str = typer.Option("", "--output", "-o")):
             f"{len(hunk_list)} hunk(s) failed in {file_name} with subject {subject}"
         )
 
-        sha_list = getpatches(file_name, subject, save=True)
+        hit_list, sha_list = getpatches(file_name, subject, save=True)
         sha_for_sure = None
 
-        for sha in sha_list:
+        for sha in hit_list:
             with open(
                 os.path.join(
                     settings.base_dir,
@@ -108,7 +108,7 @@ def auto(filename: str, output: str = typer.Option("", "--output", "-o")):
         logger.info(f"Hunk list: {hunk_list}")
 
         conflict_list = trace(
-            file_name, from_commit=sha_for_sure, flag_hunk_list=hunk_list
+            sha_list, file_name, from_commit=sha_for_sure, flag_hunk_list=hunk_list
         )
 
         line_list = File(file_path=file_name).line_list
