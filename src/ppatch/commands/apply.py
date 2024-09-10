@@ -51,6 +51,7 @@ def apply(
                     logger.error(f"Failed hunk: {failed_hunk.index}")
             else:
                 logger.error(f"{old_filename} not found!")
+                return
 
             # 写入文件
             with open(new_filename, mode="w+", encoding="utf-8") as f:
