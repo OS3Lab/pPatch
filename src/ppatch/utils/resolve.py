@@ -32,14 +32,15 @@ def apply_change(
     # 然后对每个hunk进行处理，添加偏移
     changes: list[Change] = []
     failed_hunk_list: list[Hunk] = []
+    last_pos = None
     for hunk in hunk_list:
 
         current_hunk_fuzz = 0
 
         while current_hunk_fuzz <= fuzz:
 
-            hunk.context = hunk.context[1:]
-            hunk.post = hunk.post[: fuzz - current_hunk_fuzz]
+            # hunk.context = hunk.context[1:]
+            # hunk.post = hunk.post[: fuzz - current_hunk_fuzz]
 
             logger.debug(
                 f"current_fuzz: {current_hunk_fuzz} len(hunk.context): {len(hunk.context)} len(hunk.post): {len(hunk.post)}"
@@ -55,6 +56,10 @@ def apply_change(
                 break
 
             current_hunk_fuzz += 1
+
+            if current_hunk_fuzz <= fuzz:
+                hunk.context = hunk.context[1:]
+                hunk.post = hunk.post[: 3 - current_hunk_fuzz]
 
         # 初始位置是 context 的第一个
         # 注意，前几个有可能是空
@@ -91,11 +96,25 @@ def apply_change(
             f"Apply hunk {hunk.index} with offset {min_offset} fuzz {current_hunk_fuzz}"
         )
 
+        pos_new = pos_origin + min_offset - 1
+        # 处理 pos_new 小于 last_pos 的情况
+        logger.debug(f"pos_origin: {pos_origin}, last_pos: {last_pos}")
+        if last_pos is None:
+            last_pos = pos_new
+        elif pos_new < last_pos:
+            # 特别主要 pos_new 小于 last_pos 的情况
+            logger.warning(f"Apply failed with hunk {hunk.index}")
+            logger.error(f"pos: {pos_new} is greater than last_pos: {last_pos}")
+            failed_hunk_list.append(hunk)
+            continue
+        else:
+            last_pos = pos_new
+
         # 如果 reverse 为 True，则直接替换，不进行 flag 追踪
         if reverse:
             # 直接按照 pos 进行替换
             # 选择 offset 最小的 pos
-            pos_new = pos_origin + min_offset - 1
+            # pos_new = pos_origin + min_offset - 1 # 移动到上面
 
             old_lines = [
                 change.line
