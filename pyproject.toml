@@ -30,4 +30,5 @@ distribution = true
 [tool.pdm.dev-dependencies]
 dev = [
     "viztracer>=0.16.3",
+    "ipdb>=0.13.13",
 ]
