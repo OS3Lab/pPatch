@@ -1,32 +1,78 @@
+import os
+
 from cscopy.cli import CscopeCLI
+from cscopy.model import SearchResult
 from cscopy.workspace import CscopeWorkspace
 
 from ppatch.app import app, logger
-
-# 一个新的设计思路：不直接调用作为 command 的函数，将 command 和具体功能区分开
-# 写这个临时的 command 的时候可以简单试一下
+from ppatch.utils.parse import parse_patch
 
 
 @app.command("symbol")
 def getsymbol_command(
-    files: list[str] = [],
+    file: str,
     symbols: list[str] = [],
 ):
-    getsymbol(files, symbols)
+    getsymbol(file, symbols)
 
 
-def getsymbol(files: list[str], symbols: list[str]):
-    logger.debug(f"Getting symbols from {files} with {symbols}")
+def getsymbol(file: str, symbols: list[str]) -> dict[str, list[SearchResult]]:
+    logger.debug(f"Getting symbols from {file} with {symbols}")
 
     cli = CscopeCLI("/usr/bin/cscope")
 
-    # 之后还是要按 patch/file/hunk 划分的，这里只是一个临时的 command
-    # 解析的思路：先按文件划分，再按每个 hunk 划分
-    # DONE 现在需要做的：增强 ppatch 的补丁解析功能，使其能够解析出 diff-hunk-change 三层结构
+    files: list[str] = []
 
+    # 针对 patch 类型的文件需要进行特殊处理
+    if file.endswith(".patch"):
+        diffes = parse_patch(
+            os.read(os.open(file, os.O_RDONLY), os.path.getsize(file)).decode(
+                "utf-8", errors="ignore"
+            )
+        ).diff
+
+        for index, diff in enumerate(diffes):
+            for hunk in diff.hunks:
+                # add_path = f"/dev/shm/{index}-{hunk.index}-add"
+                # del_path = f"/dev/shm/{index}-{hunk.index}-del"
+
+                # with open(add_path, "w") as f:
+                #     for change in hunk.middle:
+                #         if change.new is not None and change.old is None:
+                #             f.write(change.line + "\n")
+
+                # with open(del_path, "w") as f:
+                #     for change in hunk.middle:
+                #         if change.new is None and change.old is not None:
+                #             f.write(change.line + "\n")
+
+                # files.append(add_path)
+                # files.append(del_path)
+
+                hunk_path = f"/dev/shm/{index}-{hunk.index}"
+                with open(hunk_path, "w") as f:
+                    for change in hunk.middle:
+                        if change.new is not None and change.old is None:
+                            f.write(change.line + "\n")
+                        if change.new is None and change.old is not None:
+                            f.write(change.line + "\n")
+
+                files.append(hunk_path)
+
+    else:
+        files = [file]
+
+    res = {}
     with CscopeWorkspace(files, cli) as workspace:
         for symbol in symbols:
             result = workspace.search_c_symbol(symbol)
+            res[symbol] = result
 
             for res in result:
                 logger.info(f"{res.file}:{res.line} {res.content}")
+
+    if file.endswith(".patch"):
+        for f in files:
+            os.remove(f)
+
+    return res
