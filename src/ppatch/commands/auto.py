@@ -1,3 +1,4 @@
+import json
 import os
 
 import typer
@@ -13,7 +14,11 @@ from ppatch.utils.resolve import apply_change
 
 
 @app.command()
-def auto(filename: str, output: str = typer.Option("", "--output", "-o")):
+def auto(
+    filename: str,
+    output: str = typer.Option("", "--output", "-o"),
+    extra_config: str = typer.Option("", "--extra-config", "-c"),
+):
     """Automatic do ANYTHING"""
     if not os.path.exists(filename):
         logger.error(f"{filename} not found!")
@@ -107,8 +112,21 @@ def auto(filename: str, output: str = typer.Option("", "--output", "-o")):
         logger.info(f"Found correspond patch {sha_for_sure} to {file_name}")
         logger.info(f"Hunk list: {hunk_list}")
 
+        symbols: list[str] = None
+        if extra_config != "":
+            logger.info(f"Using extra config {extra_config}")
+            with open(extra_config, mode="r", encoding="utf-8") as (extra_config_file):
+                extra_config_json: list | dict = json.load(extra_config_file)
+                symbols = extra_config_json.get(file_name, None)
+
+                logger.debug(f"Symbols to search in {file_name}: {symbols}")
+
         conflict_list = trace(
-            sha_list, file_name, from_commit=sha_for_sure, flag_hunk_list=hunk_list
+            sha_list,
+            file_name,
+            from_commit=sha_for_sure,
+            flag_hunk_list=hunk_list,
+            symbols=symbols,
         )
 
         line_list = File(file_path=file_name).line_list
@@ -130,7 +148,7 @@ def auto(filename: str, output: str = typer.Option("", "--output", "-o")):
                 changes.extend(hunk.all_)
 
             _apply_result = apply_change(
-                changes_to_hunks(changes), line_list, reverse=True
+                changes_to_hunks(changes), line_list, reverse=True, fuzz=3
             )
             # TODO: 错误处理
             try:

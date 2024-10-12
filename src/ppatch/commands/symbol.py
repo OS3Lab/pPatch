@@ -1,4 +1,5 @@
 import os
+import re
 
 from cscopy.cli import CscopeCLI
 from cscopy.model import SearchResult
@@ -68,11 +69,40 @@ def getsymbol(file: str, symbols: list[str]) -> dict[str, list[SearchResult]]:
             result = workspace.search_c_symbol(symbol)
             res[symbol] = result
 
-            for res in result:
-                logger.info(f"{res.file}:{res.line} {res.content}")
+            for _res in result:
+                logger.info(f"{_res.file}:{_res.line} {_res.content}")
 
     if file.endswith(".patch"):
         for f in files:
             os.remove(f)
 
     return res
+
+
+def getsymbol_from_patch(file: str, symbols: list[str]) -> dict[int, list[int]]:
+    """
+    Get symbols from a patch file
+
+    Args:
+        file (str): The patch file
+        symbols (list[str]): The symbols to search
+    Returns:
+        diff_hunks (list[int]): hunk numbers of which the symbols are found
+    """
+
+    diff_hunks: dict[int, list[int]] = {}
+    res = getsymbol(file, symbols)
+    for search_res in res.values():
+        for _res in search_res:
+            # 按照 /dev/shm/{index}-{hunk.index} 的格式从 _res.file 中匹配出 diff index 和 hunk index
+            match = re.match(r"/dev/shm/(\d+)-(\d+)", _res.file)
+            if match:
+                diff_index = int(match.group(1))
+                hunk_index = int(match.group(2))
+
+                if diff_index not in diff_hunks:
+                    diff_hunks[diff_index] = []
+
+                diff_hunks[diff_index].append(hunk_index)
+
+    return diff_hunks

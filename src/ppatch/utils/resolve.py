@@ -1,4 +1,5 @@
 from ppatch.app import logger
+from ppatch.commands.symbol import getsymbol_from_patch
 from ppatch.config import settings
 from ppatch.model import ApplyResult, Change, Hunk, Line
 from ppatch.utils.common import find_list_positions
@@ -12,6 +13,8 @@ def apply_change(
     trace: bool = False,
     flag_hunk_list: list[int] = None,
     fuzz: int = 0,
+    symbols: list[str] = None,
+    patch_path: str = "",
 ) -> ApplyResult:
     """Apply a diff to a target string."""
 
@@ -244,8 +247,26 @@ def apply_change(
                 line.flag = True
 
         new_line_list.append(
-            Line(index=index, content=line.content, flag=line.flag)
-        )  # 注意洗掉 hunk changed
+            Line(index=index, content=line.content, flag=line.flag, hunk=line.hunk)
+        )  # 洗掉 changed 注意在下面洗掉 hunk
+
+    # WIP: 在 conclict hunk 中搜索 symbol，注意去重
+    if symbols is not None and len(conflict_hunk_num_list) != 0:
+        logger.debug(f"Searching symbol in conflict hunk")
+        # patch_path 已经是筛选后的 patch，仅包含 filename 对应内容
+        extra_hunks = getsymbol_from_patch(patch_path, symbols).get(0, [])
+        logger.debug(f"Extra hunk list: {extra_hunks}")
+
+        # 合并 extra_hunks 到 apply_result.conflict_hunk_num_list
+        conflict_hunk_num_list += extra_hunks
+
+        for line in new_line_list:
+            if line.hunk in conflict_hunk_num_list:
+                line.flag = True
+            line.hunk = None
+    else:
+        for line in new_line_list:
+            line.hunk = None
 
     failed_hunk_list.extend(
         [
