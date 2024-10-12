@@ -5,7 +5,7 @@ annotated-types==0.7.0
 asttokens==2.4.1; python_version > "3.6"
 click==8.1.7
 colorama==0.4.6; sys_platform == "win32" and python_version > "3.6" or platform_system == "Windows"
-cscopy==0.0.2
+cscopy==0.0.3
 decorator==5.1.1; python_version > "3.6"
 exceptiongroup==1.2.2; python_version < "3.11" and python_version > "3.6"
 executing==2.1.0; python_version > "3.6"

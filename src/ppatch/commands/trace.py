@@ -44,6 +44,7 @@ def trace(
     filename: str,
     from_commit: str = "",
     flag_hunk_list: list[int] = None,
+    symbols: list[str] = None,
 ) -> dict[str, ApplyResult]:
     # 在 sha_list 中找到 from_commit 和 to_commit 的位置
     from_index = sha_list.index(from_commit) if from_commit else -1
@@ -115,13 +116,20 @@ def trace(
                 if diff.header.old_path == filename or diff.header.new_path == filename:
                     try:
                         apply_result = apply_change(
-                            diff.hunks, new_line_list, trace=True, flag=True, fuzz=3
+                            diff.hunks,
+                            new_line_list,
+                            trace=True,
+                            flag=True,
+                            fuzz=3,
+                            symbols=symbols,
+                            patch_path=patch_path,
                         )
                         new_line_list = apply_result.new_line_list
 
                         logger.debug(
                             f"Apply patch {sha} to {filename}: {len(new_line_list)}"
                         )
+                        break  # 保证每个 patch 中每个文件仅有一个 diff（True？）
                     except Exception as e:
                         logger.error(f"Failed to apply patch {sha}")
                         logger.error(f"Error: {e}")

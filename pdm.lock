@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:0d780f6e941113ad13417c6cbf4ea3fd1e3d4af56ab43827b6d6e8be4344425d"
+content_hash = "sha256:5202733a6ba3667b515ace43e0de6a50d282b9620142e905dc1fb8c2f39c0760"
 
 [[metadata.targets]]
 requires_python = ">=3.10"
@@ -68,7 +68,7 @@ files = [
 
 [[package]]
 name = "cscopy"
-version = "0.0.2"
+version = "0.0.3"
 requires_python = ">=3.10"
 summary = "Python binding for cscopy"
 groups = ["default"]
@@ -76,8 +76,8 @@ dependencies = [
     "pydantic>=2.7.3",
 ]
 files = [
-    {file = "cscopy-0.0.2-py3-none-any.whl", hash = "sha256:78debba1d1ac40e187a54f0488f6c97d209e591b95e37d50bab15365b15f42a6"},
-    {file = "cscopy-0.0.2.tar.gz", hash = "sha256:77dc543df8aaa1685bca6ccdb76bfeb4c006afd9392340d012e94eeea63140df"},
+    {file = "cscopy-0.0.3-py3-none-any.whl", hash = "sha256:abed5ffcf8b4d8cd26dc85f680e8918950b395ddbb1ee855a4fae8a8e16a6711"},
+    {file = "cscopy-0.0.3.tar.gz", hash = "sha256:a9394c776d4f1c04ef6a17ca87faec8ed3f538e13c88128f05e7bba600ad4e50"},
 ]
 
 [[package]]
