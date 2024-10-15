@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:5202733a6ba3667b515ace43e0de6a50d282b9620142e905dc1fb8c2f39c0760"
+content_hash = "sha256:838eb6c6f611048bd6715fbdf796cbb900f404bfe053b4b8ac5d784265850b95"
 
 [[metadata.targets]]
 requires_python = ">=3.10"
@@ -477,17 +477,6 @@ dependencies = [
 files = [
     {file = "stack_data-0.6.3-py3-none-any.whl", hash = "sha256:d5558e0c25a4cb0853cddad3d77da9891a08cb85dd9f9f91b9f8cd66e511e695"},
     {file = "stack_data-0.6.3.tar.gz", hash = "sha256:836a778de4fec4dcd1dcd89ed8abff8a221f58308462e1c4aa2a3cf30148f0b9"},
-]
-
-[[package]]
-name = "structlog"
-version = "24.4.0"
-requires_python = ">=3.8"
-summary = "Structured Logging for Python"
-groups = ["default"]
-files = [
-    {file = "structlog-24.4.0-py3-none-any.whl", hash = "sha256:597f61e80a91cc0749a9fd2a098ed76715a1c8a01f73e336b746504d1aad7610"},
-    {file = "structlog-24.4.0.tar.gz", hash = "sha256:b27bfecede327a6d2da5fbc96bd859f114ecc398a6389d664f62085ee7ae6fc4"},
 ]
 
 [[package]]
