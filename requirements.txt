@@ -30,7 +30,6 @@ rich==13.7.1
 shellingham==1.5.4
 six==1.16.0; python_version > "3.6"
 stack-data==0.6.3; python_version > "3.6"
-structlog==24.4.0
 tomli==2.0.2; python_version > "3.6" and python_version < "3.11"
 traitlets==5.14.3; python_version > "3.6"
 typer==0.12.3
