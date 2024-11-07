@@ -21,7 +21,9 @@ def getpatches(
     logger.info(f"Get patches of {filename}")
 
     output: str = subprocess.run(
-        ["git", "log", "-p", "--", filename], capture_output=True
+        # ["git", "log", "--date-order", "-p", "--", filename], capture_output=True
+        ["git", "log", "--topo-order", "-p", "--", filename],
+        capture_output=True,
     ).stdout.decode("utf-8", errors="ignore")
 
     # 将 output 按照 commit ${hash}开头的行分割
