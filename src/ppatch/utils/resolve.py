@@ -215,7 +215,7 @@ def apply_change(
                 assert index == change.new - 1  # TODO: but why? 44733
             except AssertionError:
                 logger.error(
-                    f"index: {index}, change.new: {change.new}, hunk: {change.hunk}"
+                    f"index: {index}, change.new: {change.new}, hunk: {change.hunk}, patch: {patch_path.split('/')[-1][:6]}"
                 )
 
             target[index].flag = (
