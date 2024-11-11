@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     base_dir: str = str(pkg_resources.files("ppatch"))
     patch_store_dir: str = "_patches"
     max_diff_lines: int = 3
+    work_dir: str = os.path.abspath(os.getcwd())
 
     class Config:
         env_file = os.path.join(os.environ.get("HOME"), ".ppatch.env")
