@@ -1,3 +1,4 @@
+import re
 import subprocess
 from typing import Any
 
@@ -24,15 +25,37 @@ def process_title(filename: str):
     return "".join([letter for letter in filename if letter.isalnum()])
 
 
+# def find_list_positions(main_list: list[str], sublist: list[str]) -> list[int]:
+#     sublist_length = len(sublist)
+#     positions = []
+
+#     for i in range(len(main_list) - sublist_length + 1):
+#         if main_list[i : i + sublist_length] == sublist:
+#             positions.append(i)
+
+#     return positions
+
+
 def find_list_positions(main_list: list[str], sublist: list[str]) -> list[int]:
     sublist_length = len(sublist)
     positions = []
 
     for i in range(len(main_list) - sublist_length + 1):
-        if main_list[i : i + sublist_length] == sublist:
+        is_similar = True
+        for j in range(sublist_length):
+            if not similar(main_list[i + j], sublist[j]):
+                is_similar = False
+                break
+        if is_similar:
             positions.append(i)
 
     return positions
+
+
+def similar(a: str, b: str) -> bool:
+    a = re.sub(r"\s+", " ", a.strip().replace("\n", " "))
+    b = re.sub(r"\s+", " ", b.strip().replace("\n", " "))
+    return a == b
 
 
 def isnamedtupleinstance(x):

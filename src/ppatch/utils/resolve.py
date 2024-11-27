@@ -2,7 +2,7 @@ from ppatch.app import logger
 from ppatch.commands.symbol import getsymbol_from_patch
 from ppatch.config import settings
 from ppatch.model import ApplyResult, Change, Hunk, Line
-from ppatch.utils.common import find_list_positions
+from ppatch.utils.common import find_list_positions, similar
 
 
 def apply_change(
@@ -132,7 +132,8 @@ def apply_change(
 
             # 检查 pos_new 位置的行是否和 old_lines 一致
             for i in range(len(old_lines)):
-                if target[pos_new + i].content != old_lines[i]:
+                # if target[pos_new + i].content != old_lines[i]:
+                if not similar(target[pos_new + i].content, old_lines[i]):
                     raise Exception(
                         f'line {pos_new + i}, "{target[pos_new + i].content}" does not match "{old_lines[i]}"'
                     )
