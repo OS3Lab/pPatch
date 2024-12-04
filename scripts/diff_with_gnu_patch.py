@@ -72,9 +72,15 @@ def test_ppatch_apply(exec: str, poc_index: str) -> int:
         return 1
     else:
         # 将 git diff 信息输出到文件中
-        res = subprocess.run(["git", "diff"], check=True, stdout=subprocess.PIPE)
+        res = subprocess.run(["git", "diff", "-w"], check=True, stdout=subprocess.PIPE)
         with open(f"{LOG_DIR}/{exec}_apply_{poc_index}_diff.log", "w") as f:
-            f.write(res.stdout.decode("utf-8", errors="ignore"))
+            # 过滤以 index 开头的行
+            content: str = res.stdout.decode("utf-8", errors="ignore")
+            content = "\n".join(
+                [line for line in content.split("\n") if not line.startswith("index")]
+            )
+
+            f.write(content)
 
         # subprocess.run(["git", "clean", "-f", "-q"], check=False)
         subprocess.run(["git", "restore", "."], check=False)
@@ -115,6 +121,7 @@ if __name__ == "__main__":
             res = subprocess.run(
                 [
                     "diff",
+                    "-w",
                     f"{LOG_DIR}/ppatch_apply_{poc_index}_diff.log",
                     f"{LOG_DIR}/patch_apply_{poc_index}_diff.log",
                 ],
