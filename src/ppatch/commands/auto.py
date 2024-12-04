@@ -1,4 +1,3 @@
-import json
 import os
 
 import typer
@@ -8,7 +7,7 @@ from ppatch.commands.get import getpatches
 from ppatch.commands.trace import trace
 from ppatch.config import settings
 from ppatch.model import CommandResult, CommandType, Diff, File
-from ppatch.utils.common import process_title
+from ppatch.utils.common import process_json_config, process_title
 from ppatch.utils.parse import changes_to_hunks, parse_patch
 from ppatch.utils.resolve import apply_change
 
@@ -115,11 +114,13 @@ def auto(
         symbols: list[str] = None
         if extra_config != "":
             logger.info(f"Using extra config {extra_config}")
-            with open(extra_config, mode="r", encoding="utf-8") as (extra_config_file):
-                extra_config_json: list | dict = json.load(extra_config_file)
-                symbols = extra_config_json.get(file_name, None)
+            # with open(extra_config, mode="r", encoding="utf-8") as (extra_config_file):
+            # extra_config_json: list | dict = json.load(extra_config_file)
 
-                logger.debug(f"Symbols to search in {file_name}: {symbols}")
+            extra_config_json = process_json_config(extra_config)
+            symbols = extra_config_json.get(file_name, None)
+
+            logger.debug(f"Symbols to search in {file_name}: {symbols}")
 
         conflict_list = trace(
             sha_list,
