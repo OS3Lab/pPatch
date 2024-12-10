@@ -7,7 +7,7 @@ use_config=$2
 
 # 定义三个命令，使用该变量
 if [[ $use_config == "true" ]]; then
-  command1="ppatch auto /home/laboratory/workspace/archive/patches/poc_$variable.patch -o ../6.1-result/$variable.patch -c /home/laboratory/workspace/exps/ppatch/merged_config.json"
+  command1="ppatch auto /home/laboratory/workspace/archive/patches/poc_$variable.patch -o ../6.1-result/$variable.patch -c /home/laboratory/workspace/exps/ppatch/example_extra_config.json"
 else
   command1="ppatch auto /home/laboratory/workspace/archive/patches/poc_$variable.patch -o ../6.1-result/$variable.patch"
 fi
@@ -41,6 +41,6 @@ read -p "命令3执行成功，按任意键继续..."
 
 git diff > $variable.patch
 
-scp pride:/mnt/cd7/ppatch_autoset/auto_linux_5.10lts/exps/poc_$variable/linux_6_lts/x86_64/linux_6_lts_kernel/upper_dir/.config .config.$variable
+scp pride:/mnt/cd7/ppatch_autoset/auto_linux_6.9.5_back/exps/poc_$variable/linux_6_lts/x86_64/linux_6_lts_kernel/upper_dir/.config .config.$variable
 
 read -p "patch 生成与 config 下载结束，按任意键继续..."
