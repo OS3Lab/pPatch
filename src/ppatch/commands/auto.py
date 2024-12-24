@@ -134,6 +134,8 @@ def auto(
         conflict_list = list(conflict_list.items())
         conflict_list.reverse()
 
+        planned_hunks_count: int = 0
+        added_hunks_count: int = 0
         for sha, apply_result in conflict_list:
             # 对 apply_result.failed_hunk_list 中的冲突块按照 hunk.index 进行排序
             apply_result.failed_hunk_list = sorted(
@@ -147,6 +149,7 @@ def auto(
             changes = []
             for hunk in apply_result.failed_hunk_list:
                 changes.extend(hunk.all_)
+                planned_hunks_count += 1
 
             _apply_result = apply_change(
                 changes_to_hunks(changes), line_list, reverse=True, fuzz=3
@@ -158,6 +161,7 @@ def auto(
                 logger.error(
                     f"AUTO: Failed hunk in {sha}; len: {len(_apply_result.failed_hunk_list)}"
                 )
+                planned_hunks_count -= len(_apply_result.failed_hunk_list)
 
             line_list = _apply_result.new_line_list
 
@@ -190,6 +194,9 @@ def auto(
             )
 
         f.write(patch_content)
+        logger.info(
+            f"Hunks planned: {planned_hunks_count} Hunk added: {added_hunks_count}"
+        )
         logger.info(f"Patch file generated: {output}")
 
     return CommandResult(

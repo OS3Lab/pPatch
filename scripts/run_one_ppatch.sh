@@ -7,6 +7,7 @@ use_config=$2
 
 # 定义三个命令，使用该变量
 if [[ $use_config == "true" ]]; then
+  echo "Use config = True"
   command1="ppatch auto /home/laboratory/workspace/archive/patches/poc_$variable.patch -o ../6.1-result/$variable.patch -c /home/laboratory/workspace/exps/ppatch/example_extra_config.json"
 else
   command1="ppatch auto /home/laboratory/workspace/archive/patches/poc_$variable.patch -o ../6.1-result/$variable.patch"
