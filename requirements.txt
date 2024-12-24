@@ -2,39 +2,37 @@
 # Please do not edit it manually.
 
 annotated-types==0.7.0
-asttokens==2.4.1; python_version > "3.6"
-click==8.1.7
+asttokens==3.0.0; python_version > "3.6"
+click==8.1.8
 colorama==0.4.6; sys_platform == "win32" and python_version > "3.6" or platform_system == "Windows"
 cscopy==0.0.3
 decorator==5.1.1; python_version > "3.6"
 exceptiongroup==1.2.2; python_version < "3.11" and python_version > "3.6"
 executing==2.1.0; python_version > "3.6"
 ipdb==0.13.13
-ipython==8.28.0; python_version > "3.6"
-jedi==0.19.1; python_version > "3.6"
+ipython==8.31.0; python_version > "3.6"
+jedi==0.19.2; python_version > "3.6"
 markdown-it-py==3.0.0
 matplotlib-inline==0.1.7; python_version > "3.6"
 mdurl==0.1.2
-objprint==0.2.3
+objprint==0.3.0
 parso==0.8.4; python_version > "3.6"
 pexpect==4.9.0; (sys_platform != "win32" and sys_platform != "emscripten") and python_version > "3.6"
 prompt-toolkit==3.0.48; python_version > "3.6"
 ptyprocess==0.7.0; (sys_platform != "win32" and sys_platform != "emscripten") and python_version > "3.6"
 pure-eval==0.2.3; python_version > "3.6"
-pydantic==2.8.2
-pydantic-core==2.20.1
-pydantic-settings==2.4.0
+pydantic==2.10.4
+pydantic-core==2.27.2
+pydantic-settings==2.7.0
 pygments==2.18.0
 python-dotenv==1.0.1
-rich==13.7.1
+rich==13.9.4
 shellingham==1.5.4
-six==1.16.0; python_version > "3.6"
 stack-data==0.6.3; python_version > "3.6"
-tomli==2.0.2; python_version > "3.6" and python_version < "3.11"
+tomli==2.2.1; python_version > "3.6" and python_version < "3.11"
 traitlets==5.14.3; python_version > "3.6"
-typer==0.12.3
-typer[all]==0.12.3
+typer[all]==0.15.1
 typing-extensions==4.12.2
-viztracer==0.16.3
+viztracer==1.0.0
 wcwidth==0.2.13; python_version > "3.6"
 whatthepatch-pydantic==1.0.6a2
