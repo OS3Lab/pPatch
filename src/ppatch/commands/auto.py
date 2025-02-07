@@ -125,8 +125,8 @@ def auto(
         conflict_list = trace(
             sha_list,
             file_name,
-            from_commit=sha_for_sure,
-            flag_hunk_list=hunk_list,
+            commits=[sha_for_sure],
+            flag_hunks_list=[hunk_list],
             symbols=symbols,
         )
 

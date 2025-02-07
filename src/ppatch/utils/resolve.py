@@ -15,6 +15,7 @@ def apply_change(
     fuzz: int = 0,
     symbols: list[str] = None,
     patch_path: str = "",
+    extra_flag_hunks: list[int] = None,
 ) -> ApplyResult:
     """Apply a diff to a target string."""
 
@@ -181,6 +182,9 @@ def apply_change(
     del_count = 0
 
     conflict_hunk_num_list: list[int] = []
+    if extra_flag_hunks is not None:  # TODO: 确认这里是否可以放在这里
+        conflict_hunk_num_list += extra_flag_hunks
+
     for change in changes:
         # 只修改新增行和删除行（只有这些行是被修改的）
         if change.old is None and change.new is not None:
@@ -251,10 +255,13 @@ def apply_change(
         )  # 洗掉 changed 注意在下面洗掉 hunk
 
     # WIP: 在 conclict hunk 中搜索 symbol，注意去重
+    logger.debug("patch_path: " + patch_path)
     if symbols is not None and len(conflict_hunk_num_list) != 0:
         logger.debug(f"Searching symbol in conflict hunk")
         # patch_path 已经是筛选后的 patch，仅包含 filename 对应内容
-        extra_hunks = getsymbol_from_patch(patch_path, symbols).get(0, [])
+        extra_hunks = list(getsymbol_from_patch(patch_path, symbols).values())[
+            0
+        ]  # patch_path 仅有一个 diff，故只获取首个 diff 即可
         logger.debug(f"Extra hunk list: {extra_hunks}")
 
         # 合并 extra_hunks 到 apply_result.conflict_hunk_num_list

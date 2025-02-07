@@ -1,10 +1,12 @@
 from enum import Enum
-from typing import Optional
+from typing import Optional, TypeAlias
 
 from pydantic import BaseModel
 from whatthepatch.model import Change
 from whatthepatch.model import Diff as WTPDiff
 from whatthepatch.model import Header
+
+SHA: TypeAlias = str
 
 
 class Line(BaseModel):
@@ -24,7 +26,7 @@ class File(object):
     def __init__(self, file_path: str) -> None:
         self.line_list: list[Line] = []
 
-        with open(file_path, mode="r", encoding="utf-8") as f:
+        with open(file_path, mode="r", encoding="utf-8", errors="ignore") as f:
             for i, line in enumerate(f):
                 self.line_list.append(Line(index=i, content=line.rstrip("\n")))
 

@@ -5,7 +5,7 @@ import whatthepatch
 
 from ppatch.app import app, logger
 from ppatch.config import settings
-from ppatch.model import ApplyResult, File
+from ppatch.model import SHA, ApplyResult, File
 from ppatch.utils.common import process_title
 from ppatch.utils.parse import wtp_diff_to_diff
 from ppatch.utils.resolve import apply_change
@@ -36,16 +36,25 @@ def trace_command(
 
     sha_list = output.splitlines()
 
-    return trace(sha_list, filename, from_commit, flag_hunk_list)
+    return trace(sha_list, filename, [from_commit], [flag_hunk_list])
 
 
+# TODO: 将单一的 from_commit 改为多个，改为 sha:hunks 对，在指定 sha 要标记更多的 flag hunk
+# STEP1: from_commit 改为首个 sha ✅
+# STEP2: 在当迭代到其他 sha 时，标记更多的 flag hunk ✅
+# STEP3: 从 apply result 获取需要补充的 filename:flag_hunk_list
+# STEP4: 在返回值中添加对应的 filename:sha:flag_hunk_list
 def trace(
     sha_list: list[str],
     filename: str,
-    from_commit: str = "",
-    flag_hunk_list: list[int] = None,
+    commits: list[SHA] = "",
+    flag_hunks_list: list[list[int]] = None,
     symbols: list[str] = None,
 ) -> dict[str, ApplyResult]:
+
+    assert len(commits) == len(flag_hunks_list)
+    # 从 commits 中取出首个 sha
+    from_commit = commits.pop(0)
     # 在 sha_list 中找到 from_commit 和 to_commit 的位置
     from_index = sha_list.index(from_commit) if from_commit else -1
     if from_index == -1:
@@ -65,7 +74,7 @@ def trace(
 
     origin_file = File(file_path=filename)
     new_line_list = []
-    # 首先将最后一个 patch 以 flag=True 的方式 apply
+    # 首先将 from_commit 以 flag=True 的方式 apply
     from_commit_sha = sha_list.pop()
     assert from_commit_sha == from_commit
     logger.debug(f"Apply patch {from_commit_sha} to {filename}")
@@ -85,7 +94,7 @@ def trace(
                     diff.hunks,
                     origin_file.line_list,
                     flag=True,
-                    flag_hunk_list=flag_hunk_list,
+                    flag_hunk_list=flag_hunks_list.pop(),  # 取出首个 flag_hunk_list
                 )
                 # TODO: 检查失败数
                 new_line_list = apply_result.new_line_list
@@ -115,6 +124,11 @@ def trace(
                 diff = wtp_diff_to_diff(diff)
                 if diff.header.old_path == filename or diff.header.new_path == filename:
                     try:
+                        flag_hunk_list = []
+                        if sha in commits:
+                            # 将 sha 对应的 flag_hunk_list 取出
+                            flag_hunk_list = flag_hunks_list[commits.index(sha)]
+
                         apply_result = apply_change(
                             diff.hunks,
                             new_line_list,
@@ -123,6 +137,7 @@ def trace(
                             fuzz=3,
                             symbols=symbols,
                             patch_path=patch_path,
+                            extra_flag_hunks=flag_hunk_list,
                         )
                         new_line_list = apply_result.new_line_list
 

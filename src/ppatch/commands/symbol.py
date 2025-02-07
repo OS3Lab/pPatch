@@ -6,6 +6,8 @@ from cscopy.model import SearchResult
 from cscopy.workspace import CscopeWorkspace
 
 from ppatch.app import app, logger
+from ppatch.model import Diff
+from ppatch.utils.common import process_file_path
 from ppatch.utils.parse import parse_patch
 
 
@@ -26,13 +28,13 @@ def getsymbol(file: str, symbols: list[str]) -> dict[str, list[SearchResult]]:
 
     # 针对 patch 类型的文件需要进行特殊处理
     if file.endswith(".patch"):
-        diffes = parse_patch(
+        diffes: list[Diff] = parse_patch(
             os.read(os.open(file, os.O_RDONLY), os.path.getsize(file)).decode(
                 "utf-8", errors="ignore"
             )
         ).diff
 
-        for index, diff in enumerate(diffes):
+        for diff in diffes:
             for hunk in diff.hunks:
                 # add_path = f"/dev/shm/{index}-{hunk.index}-add"
                 # del_path = f"/dev/shm/{index}-{hunk.index}-del"
@@ -50,7 +52,9 @@ def getsymbol(file: str, symbols: list[str]) -> dict[str, list[SearchResult]]:
                 # files.append(add_path)
                 # files.append(del_path)
 
-                hunk_path = f"/dev/shm/{index}-{hunk.index}"
+                hunk_path = (
+                    f"/dev/shm/{process_file_path(diff.header.new_path)}-{hunk.index}"
+                )
                 with open(hunk_path, "w") as f:
                     for change in hunk.middle:
                         if change.new is not None and change.old is None:
@@ -79,7 +83,8 @@ def getsymbol(file: str, symbols: list[str]) -> dict[str, list[SearchResult]]:
     return res
 
 
-def getsymbol_from_patch(file: str, symbols: list[str]) -> dict[int, list[int]]:
+# TODO: 返回值的 diff_index 修改为 diff 对应的文件名
+def getsymbol_from_patch(file: str, symbols: list[str]) -> dict[str, list[int]]:
     """
     Get symbols from a patch file
 
@@ -90,19 +95,21 @@ def getsymbol_from_patch(file: str, symbols: list[str]) -> dict[int, list[int]]:
         diff_hunks (list[int]): hunk numbers of which the symbols are found
     """
 
-    diff_hunks: dict[int, list[int]] = {}
+    diff_hunks: dict[str, list[int]] = {}
     res = getsymbol(file, symbols)
     for search_res in res.values():
         for _res in search_res:
             # 按照 /dev/shm/{index}-{hunk.index} 的格式从 _res.file 中匹配出 diff index 和 hunk index
-            match = re.match(r"/dev/shm/(\d+)-(\d+)", _res.file)
+            match = re.match(r"/dev/shm/(.*?)-(\d+)", _res.file)
             if match:
-                diff_index = int(match.group(1))
+                file_path = process_file_path(str(match.group(1)), reverse=True)
                 hunk_index = int(match.group(2))
 
-                if diff_index not in diff_hunks:
-                    diff_hunks[diff_index] = []
+                # logger.info(f"Symbol found in {file_path} hunk {hunk_index}")
 
-                diff_hunks[diff_index].append(hunk_index)
+                if file_path not in diff_hunks:
+                    diff_hunks[file_path] = []
+
+                diff_hunks[file_path].append(hunk_index)
 
     return diff_hunks
