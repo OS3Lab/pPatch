@@ -27,6 +27,16 @@ def process_title(filename: str):
     return "".join([letter for letter in filename if letter.isalnum()])
 
 
+def process_file_path(file_path: str, reverse: bool = False) -> str:
+    """
+    Process the file path to make it suitable for path
+    """
+    if reverse:
+        return file_path.replace("&#", "/")  # Do not use _ here
+    else:
+        return file_path.replace("/", "&#")
+
+
 def find_list_positions(main_list: list[str], sublist: list[str]) -> list[int]:
     sublist_length = len(sublist)
     positions = []
