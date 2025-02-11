@@ -1,12 +1,22 @@
 import os
+import subprocess
 
 import typer
 
 from ppatch.app import app, logger
 from ppatch.commands.get import getpatches
+from ppatch.commands.symbol import getsymbol_from_patch
 from ppatch.commands.trace import trace
 from ppatch.config import settings
-from ppatch.model import CommandResult, CommandType, Diff, File
+from ppatch.model import (
+    FILENAME,
+    SHA,
+    ApplyResult,
+    CommandResult,
+    CommandType,
+    Diff,
+    File,
+)
 from ppatch.utils.common import process_json_config, process_title
 from ppatch.utils.parse import changes_to_hunks, parse_patch
 from ppatch.utils.resolve import apply_change
@@ -40,7 +50,7 @@ def auto(
         content = f.read()
 
     parser = parse_patch(content)
-    fail_file_list: dict[str, list[int]] = {}
+    fail_file_list: dict[str, list[int]] = {}  # filename: [hunk.index]
     diffes: list[Diff] = parser.diff
     for diff in diffes:
         target_file = diff.header.new_path  # 这里注意是 new_path 还是 old_path
@@ -73,6 +83,24 @@ def auto(
 
     subject = parser.subject
     diffes: list = []
+    filename_with_conflict_list: dict[FILENAME, dict[SHA, ApplyResult]] = {}
+
+    symbols: list[str] = None
+    if extra_config != "":
+        logger.info(f"Using extra config {extra_config}")
+        # with open(extra_config, mode="r", encoding="utf-8") as (extra_config_file):
+        # extra_config_json: list | dict = json.load(extra_config_file)
+
+        extra_config_json = process_json_config(extra_config)
+        symbols = [
+            item
+            for value in extra_config_json.values()
+            if isinstance(value, list)
+            for item in value
+        ]
+
+        logger.debug(f"Symbols to search: {symbols}")
+
     for file_name, hunk_list in fail_file_list.items():
         logger.info(
             f"{len(hunk_list)} hunk(s) failed in {file_name} with subject {subject}"
@@ -111,17 +139,6 @@ def auto(
         logger.info(f"Found correspond patch {sha_for_sure} to {file_name}")
         logger.info(f"Hunk list: {hunk_list}")
 
-        symbols: list[str] = None
-        if extra_config != "":
-            logger.info(f"Using extra config {extra_config}")
-            # with open(extra_config, mode="r", encoding="utf-8") as (extra_config_file):
-            # extra_config_json: list | dict = json.load(extra_config_file)
-
-            extra_config_json = process_json_config(extra_config)
-            symbols = extra_config_json.get(file_name, None)
-
-            logger.debug(f"Symbols to search in {file_name}: {symbols}")
-
         conflict_list = trace(
             sha_list,
             file_name,
@@ -130,12 +147,88 @@ def auto(
             symbols=symbols,
         )
 
-        line_list = File(file_path=file_name).line_list
         conflict_list = list(conflict_list.items())
         conflict_list.reverse()
 
-        planned_hunks_count: int = 0
-        added_hunks_count: int = 0
+        filename_with_conflict_list[file_name] = conflict_list
+
+    if extra_config != "":
+        logger.info("Searching Symbols in extra files (Symbol Mode II)")
+
+        # 收集所有已发现冲突的 SHA
+        conflict_shas = set()
+        for file_conflicts in filename_with_conflict_list.values():
+            for sha, _ in file_conflicts:
+                conflict_shas.add(sha)
+
+        # 对每个 SHA，获取其他包含 symbol 的文件
+        new_files_to_trace: dict[FILENAME, list[tuple[SHA, list[int]]]] = {}
+
+        for sha in conflict_shas:
+            patch_path = os.path.join(
+                settings.base_dir,
+                settings.patch_store_dir,
+                f"{sha}.patch",
+            )
+
+            if not os.path.exists(patch_path):
+                # Get patch from repository using git show
+                _output = subprocess.run(
+                    ["git", "show", sha],
+                    capture_output=True,
+                ).stdout.decode("utf-8", errors="ignore")
+
+                with open(patch_path, "w", encoding="utf-8") as f:
+                    f.write(_output)
+
+            # 获取该 patch 中所有包含 symbol 的文件和对应的 hunks
+            symbol_files = getsymbol_from_patch(patch_path, symbols)
+
+            # 对每个新发现的文件
+            for file_name, hunks in symbol_files.items():
+                if file_name not in filename_with_conflict_list:  # 仅处理尚未处理的文件
+                    if file_name not in new_files_to_trace:
+                        new_files_to_trace[file_name] = []
+                    new_files_to_trace[file_name].append((sha, hunks))
+
+        # 对新文件执行 trace
+        for file_name, sha_hunks in new_files_to_trace.items():
+            if not os.path.exists(file_name):
+                logger.warning(f"File {file_name} not found, skipping")
+                continue
+
+            commits = []
+            flag_hunks_list = []
+            for sha, hunks in sha_hunks:
+                commits.append(sha)
+                flag_hunks_list.append(hunks)
+
+            # 获取文件的历史记录
+            _, sha_list = getpatches(file_name, None, save=True)
+
+            # 执行 trace
+            conflict_list = trace(
+                sha_list,
+                file_name,
+                commits=commits,
+                flag_hunks_list=flag_hunks_list,
+                symbols=symbols,
+            )
+
+            if conflict_list:  # 只添加有冲突的结果
+                conflict_list = list(conflict_list.items())
+                conflict_list.reverse()
+                filename_with_conflict_list[file_name] = conflict_list
+                logger.info(
+                    f"Added new file {file_name} with {len(conflict_list)} conflicts"
+                )
+
+    planned_hunks_count: int = 0
+    # added_hunks_count: int = 0
+    for file_name, conflict_list in filename_with_conflict_list.items():
+
+        line_list = File(file_path=file_name).line_list
+
         for sha, apply_result in conflict_list:
             # 对 apply_result.failed_hunk_list 中的冲突块按照 hunk.index 进行排序
             apply_result.failed_hunk_list = sorted(
@@ -195,7 +288,8 @@ def auto(
 
         f.write(patch_content)
         logger.info(
-            f"Hunks planned: {planned_hunks_count} Hunk added: {added_hunks_count}"
+            # f"Hunks planned: {planned_hunks_count} Hunk added: {added_hunks_count}"
+            f"Hunks planned: {planned_hunks_count}"
         )
         logger.info(f"Patch file generated: {output}")
 
