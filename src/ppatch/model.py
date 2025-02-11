@@ -7,6 +7,7 @@ from whatthepatch.model import Diff as WTPDiff
 from whatthepatch.model import Header
 
 SHA: TypeAlias = str
+FILENAME: TypeAlias = str
 
 
 class Line(BaseModel):

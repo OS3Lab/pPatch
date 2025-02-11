@@ -39,18 +39,16 @@ def trace_command(
     return trace(sha_list, filename, [from_commit], [flag_hunk_list])
 
 
-# TODO: 将单一的 from_commit 改为多个，改为 sha:hunks 对，在指定 sha 要标记更多的 flag hunk
-# STEP1: from_commit 改为首个 sha ✅
-# STEP2: 在当迭代到其他 sha 时，标记更多的 flag hunk ✅
-# STEP3: 从 apply result 获取需要补充的 filename:flag_hunk_list
-# STEP4: 在返回值中添加对应的 filename:sha:flag_hunk_list
 def trace(
-    sha_list: list[str],
+    sha_list: list[SHA],
     filename: str,
     commits: list[SHA] = "",
     flag_hunks_list: list[list[int]] = None,
     symbols: list[str] = None,
-) -> dict[str, ApplyResult]:
+) -> dict[SHA, ApplyResult]:
+
+    # 将 commits 按照 sha_list 的顺序排列
+    commits = sorted(commits, key=lambda x: sha_list.index(x)) if commits else []
 
     assert len(commits) == len(flag_hunks_list)
     # 从 commits 中取出首个 sha
@@ -105,7 +103,7 @@ def trace(
         else:
             logger.debug(f"Do not match with {filename}, skip")
 
-    confict_list: dict[str, ApplyResult] = {}
+    conflict_list: dict[SHA, ApplyResult] = {}
 
     # 注意这里需要反向
     sha_list.reverse()
@@ -146,6 +144,8 @@ def trace(
                         )
                         break  # 保证每个 patch 中每个文件仅有一个 diff（True？）
                     except Exception as e:
+                        # # DEBUG
+                        # raise e
                         logger.error(f"Failed to apply patch {sha}")
                         logger.error(f"Error: {e}")
 
@@ -154,7 +154,7 @@ def trace(
                     logger.debug(f"Do not match with {filename}, skip")
 
         if len(apply_result.conflict_hunk_num_list) > 0:
-            confict_list[sha] = apply_result
+            conflict_list[sha] = apply_result
             logger.info(f"Conflict found in {sha}")
             logger.debug(f"Conflict hunk list: {apply_result.conflict_hunk_num_list}")
 
@@ -169,6 +169,6 @@ def trace(
             if line.status:
                 f.write(f"{line.index + 1}: {line.content} {line.flag}\n")
 
-    logger.info(f"Conflict count: {len(confict_list)}")
+    logger.info(f"Conflict count: {len(conflict_list)}")
 
-    return confict_list
+    return conflict_list
