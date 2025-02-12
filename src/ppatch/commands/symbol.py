@@ -74,7 +74,9 @@ def getsymbol(file: str, symbols: list[str]) -> dict[str, list[SearchResult]]:
             res[symbol] = result
 
             for _res in result:
-                logger.info(f"{_res.file}:{_res.line} {_res.content}")
+                logger.info(
+                    f"{process_file_path(_res.file,reverse=True)}:{_res.line} {_res.content}"
+                )
 
     if file.endswith(".patch"):
         for f in files:

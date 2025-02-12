@@ -259,9 +259,8 @@ def apply_change(
     if symbols is not None and len(conflict_hunk_num_list) != 0:
         logger.debug(f"Searching symbol in conflict hunk")
         # patch_path 已经是筛选后的 patch，仅包含 filename 对应内容
-        extra_hunks = getsymbol_from_patch(patch_path, symbols).get(
-            0, []
-        )  # patch_path 仅有一个 diff，故只获取首个 diff 即可
+        # patch_path 仅有一个 diff，故只获取首个 diff 即可
+        extra_hunks = next(iter(getsymbol_from_patch(patch_path, symbols).values()))
         logger.debug(f"Extra hunk list: {extra_hunks}")
 
         # 合并 extra_hunks 到 apply_result.conflict_hunk_num_list
