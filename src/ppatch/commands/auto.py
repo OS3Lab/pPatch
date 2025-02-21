@@ -27,6 +27,7 @@ def auto(
     filename: str,
     output: str = typer.Option("", "--output", "-o"),
     extra_config: str = typer.Option("", "--extra-config", "-c"),
+    use_multi_file: bool = typer.Option(False, "--multi-file", "-m"),
 ):
     """Automatic do ANYTHING"""
     if not os.path.exists(filename):
@@ -152,7 +153,7 @@ def auto(
 
         filename_with_conflict_list[file_name] = conflict_list
 
-    if extra_config != "":
+    if extra_config != "" and use_multi_file:
         logger.info("Searching Symbols in extra files (Symbol Mode II)")
 
         # 收集所有已发现冲突的 SHA
