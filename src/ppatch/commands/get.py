@@ -36,7 +36,7 @@ def getpatches(
 
     logger.info(f"Get {len(patches)} patches for {filename}")
 
-    pattern = re.compile(expression) if expression is not None else None
+    pattern = re.compile(re.escape(expression)) if expression is not None else None
 
     hit_list = []
     sha_list = []
