@@ -42,7 +42,7 @@ def trace_command(
 def trace(
     sha_list: list[SHA],
     filename: str,
-    commits: list[SHA] = "",
+    commits: list[SHA],
     flag_hunks_list: list[list[int]] = None,
     symbols: list[str] = None,
 ) -> dict[SHA, ApplyResult]:
