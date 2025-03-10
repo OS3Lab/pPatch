@@ -17,7 +17,7 @@ from ppatch.model import (
     Diff,
     File,
 )
-from ppatch.utils.common import process_json_config, process_title
+from ppatch.utils.common import match_file_patterns, process_json_config, process_title
 from ppatch.utils.parse import changes_to_hunks, parse_patch
 from ppatch.utils.resolve import apply_change
 
@@ -47,7 +47,7 @@ def auto(
         output = os.path.join(output, "auto.patch")
 
     content = ""
-    with open(filename, mode="r", encoding="utf-8") as (f):
+    with open(filename, mode="r", encoding="utf-8", errors="ignore") as (f):
         content = f.read()
 
     parser = parse_patch(content)
@@ -55,6 +55,13 @@ def auto(
     diffes: list[Diff] = parser.diff
     for diff in diffes:
         target_file = diff.header.new_path  # 这里注意是 new_path 还是 old_path
+
+        # 检查文件是否符合 include_file_list 中的通配符
+        if not match_file_patterns(target_file, settings.include_file_list):
+            logger.info(
+                f"Skipping file {target_file} as it does not match include patterns"
+            )
+            continue
 
         if not os.path.exists(target_file):
             logger.error(f"File {target_file} not found!")

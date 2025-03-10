@@ -1,3 +1,4 @@
+import fnmatch
 import json
 import re
 import subprocess
@@ -129,3 +130,17 @@ def process_json_config(input_file: str) -> dict[str:list]:
     result = {file: list(symbols) for file, symbols in merged_data.items()}
 
     return result
+
+
+def match_file_patterns(filename: str, patterns: list[str]) -> bool:
+    """
+    Check if the filename matches any of the patterns
+
+    Args:
+        filename: file name
+        patterns: list of wildcard patterns
+
+    Returns:
+        Returns True if the filename matches any pattern, otherwise returns False
+    """
+    return any(fnmatch.fnmatch(filename, pattern) for pattern in patterns)
