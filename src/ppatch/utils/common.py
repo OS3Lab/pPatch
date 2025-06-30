@@ -107,6 +107,8 @@ def process_json_config(input_file: str) -> dict[str:list]:
         if kind == "error" and message and file_name:
             # 使用正则表达式提取变量
             symbols = re.findall(r"‘(.*?)’", message)
+            symbols.extend(re.findall(r"'(.*?)'", message))  # When to use ``?
+
             new_data.append(
                 {
                     "kind": kind,
