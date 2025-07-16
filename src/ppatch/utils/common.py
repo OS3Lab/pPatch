@@ -38,12 +38,12 @@ def process_file_path(file_path: str, reverse: bool = False) -> str:
         return file_path.replace("/", "&#")
 
 
-def find_list_positions(main_list: list[str], sublist: list[str]) -> list[int]:
-    sublist_length = len(sublist)
+def find_list_positions(main_list: list[str], sub_list: list[str]) -> list[int]:
+    sublist_length = len(sub_list)
     positions = []
 
     for i in range(len(main_list) - sublist_length + 1):
-        if main_list[i : i + sublist_length] == sublist:
+        if main_list[i : i + sublist_length] == sub_list:
             positions.append(i)
 
     return positions

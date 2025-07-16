@@ -26,8 +26,8 @@ def apply_change(
 
     # TODO: 注意，修改了该函数后，需要将此处修改为对 hunk 内的 change 进行修改
     if reverse:
-        if flag:
-            raise Exception("flag is not supported with reverse")
+        # if flag:
+        #     raise Exception("flag is not supported with reverse")
 
         for hunk in hunk_list:
             for change in hunk.context + hunk.middle + hunk.post:
@@ -142,7 +142,13 @@ def apply_change(
             target = (
                 target[:pos_new]
                 + [
-                    Line(index=pos_new + i, content=new_lines[i])
+                    Line(
+                        index=pos_new + i,
+                        content=new_lines[i],
+                        changed=True,
+                        flag=flag,
+                        hunk=hunk.index,
+                    )
                     for i in range(len(new_lines))
                 ]
                 + target[pos_new + len(old_lines) :]

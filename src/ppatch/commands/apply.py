@@ -1,4 +1,5 @@
 import os
+import subprocess
 from typing import Annotated
 
 import typer
@@ -56,7 +57,16 @@ def apply(
                     logger.error(f"Failed hunk: {failed_hunk.index}")
             else:
                 logger.error(f"{old_filename} not found!")
-                raise typer.Exit(code=1)
+
+                # git log --oneline --diff-filter=R -- <old_filename>
+                output: str = subprocess.run(
+                    ["git", "log", "--oneline", "--diff-filter=R", "--", old_filename],
+                    capture_output=True,
+                ).stdout.decode("utf-8", errors="ignore")
+                if len(output) > 0:
+                    logger.warning(f"File {old_filename} has been renamed.")
+
+                raise typer.Exit(code=2)
 
             # 写入文件
             if not has_failed:

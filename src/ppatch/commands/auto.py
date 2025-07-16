@@ -17,6 +17,8 @@ from ppatch.model import (
     Diff,
     File,
 )
+from ppatch.utils.ast import File as FileAST
+from ppatch.utils.ast import Func
 from ppatch.utils.common import match_file_patterns, process_json_config, process_title
 from ppatch.utils.parse import changes_to_hunks, parse_patch
 from ppatch.utils.resolve import apply_change
@@ -28,6 +30,7 @@ def auto(
     output: str = typer.Option("", "--output", "-o"),
     extra_config: str = typer.Option("", "--extra-config", "-c"),
     use_multi_file: bool = typer.Option(False, "--multi-file", "-m"),
+    oracle: bool = typer.Option(False, "--oracle", "-O"),
 ):
     """Automatic do ANYTHING"""
     if not os.path.exists(filename):
@@ -91,7 +94,7 @@ def auto(
 
     subject = parser.subject
     diffes: list = []
-    filename_with_conflict_list: dict[FILENAME, dict[SHA, ApplyResult]] = {}
+    filename_with_conflict_list: dict[FILENAME, list[tuple[SHA, ApplyResult]]] = {}
 
     symbols: list[str] = None
     if extra_config != "":
@@ -253,7 +256,7 @@ def auto(
                 planned_hunks_count += 1
 
             _apply_result = apply_change(
-                changes_to_hunks(changes), line_list, reverse=True, fuzz=3
+                changes_to_hunks(changes), line_list, reverse=True, fuzz=3, flag=True
             )
             # TODO: 错误处理
             try:
@@ -269,6 +272,48 @@ def auto(
         origin_file = File(file_path=file_name)
         patched_text = "\n".join([line.content for line in line_list])
         origin_text = "\n".join([line.content for line in origin_file.line_list])
+
+        # 在 patched_text 上进行修改
+        # 1. 获取所有发生变更的行的行号和 hunk.index
+        # 2. 搜索这些行在在 patched_text 中属于哪些函数的范围，如果不是函数则不处理
+        # 3. 在这些函数的起始位置添加 printk
+        if oracle:
+            changed_funcs: list[Func] = []
+
+            file_ast = FileAST(content=patched_text)
+
+            changed_lines = [line for line in line_list if line.changed]
+
+            for line in changed_lines:
+                line_number = line.index + 1
+
+                func: Func | None = file_ast.locate_line(line_number)
+                if func:
+                    changed_funcs.append(func)
+
+            # TODO
+            sorted_changed_funcs = []
+            for func in changed_funcs:
+                if func not in sorted_changed_funcs:
+                    sorted_changed_funcs.append(func)
+
+            changed_funcs = sorted_changed_funcs
+
+            for func in changed_funcs:
+                # 从 start_line 开始读取，读取到的第一个 '{' 之后插入一行 printk
+                patched_lines = patched_text.splitlines()
+                # convert to 0-based index
+                start_idx = func["start_line"] - 1
+                # 从函数定义开始位置往后找第一个 '{'
+                for i in range(start_idx, len(patched_lines)):
+                    if "{" in patched_lines[i]:
+                        patched_lines.insert(
+                            i + 1,
+                            f'\tprintk("pPatch: Enter function `{func["name"]}` from file `{filename}`\\n");',
+                        )
+                        break
+                # 重新构建 patched_text
+                patched_text = "\n".join(patched_lines)
 
         import difflib
 
