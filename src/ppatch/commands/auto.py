@@ -24,6 +24,10 @@ from ppatch.utils.parse import changes_to_hunks, parse_patch
 from ppatch.utils.resolve import apply_change
 
 
+def process_str(s: str) -> str:
+    return "".join(c if c.isalnum() or c == "_" else "_" for c in s)
+
+
 @app.command()
 def auto(
     filename: str,
@@ -76,7 +80,10 @@ def auto(
 
         # 执行 Reverse，确定失败的 Hunk
         apply_result = apply_change(
-            diff.hunks, origin_file.line_list, reverse=True, fuzz=3
+            diff.hunks,
+            origin_file.line_list,
+            reverse=True,
+            fuzz=2,  # TODO: 调整为 fuzz=2，还需要改 trace 里的 fuzz 参数
         )
 
         if len(apply_result.failed_hunk_list) != 0:
@@ -291,7 +298,7 @@ def auto(
                 if func:
                     changed_funcs.append(func)
 
-            # TODO
+            # TODO: 简化
             sorted_changed_funcs = []
             for func in changed_funcs:
                 if func not in sorted_changed_funcs:
@@ -309,7 +316,7 @@ def auto(
                     if "{" in patched_lines[i]:
                         patched_lines.insert(
                             i + 1,
-                            f'\tprintk("pPatch: Enter function `{func["name"]}` from file `{filename}`\\n");',
+                            f"""\tprintk(KERN_NOTICE "PPATCH {process_str(func["name"])} {filename.split("/")[-1]}\\n");""",
                         )
                         break
                 # 重新构建 patched_text
