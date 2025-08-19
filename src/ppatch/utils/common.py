@@ -6,7 +6,9 @@ from collections import defaultdict
 from typing import Any
 
 from ppatch.app import logger
-from ppatch.model import CommandResult, CommandType
+from ppatch.model import CommandResult, CommandType, Line
+from ppatch.utils.ast import File as FileAST
+from ppatch.utils.ast import Func
 
 
 def clean_repo():
@@ -146,3 +148,30 @@ def match_file_patterns(filename: str, patterns: list[str]) -> bool:
         Returns True if the filename matches any pattern, otherwise returns False
     """
     return any(fnmatch.fnmatch(filename, pattern) for pattern in patterns)
+
+
+def get_changed_funcs(line_list: list[Line], file_ast: FileAST) -> list[Func]:
+    """
+    line_list: list of changed lines, each line is a Line object with .changed attribute
+    file_ast: FileAST object representing the file's AST
+    """
+
+    changed_lines: list[Line] = [line for line in line_list if line.changed]
+    changed_funcs: list[Func] = []
+
+    for line in changed_lines:
+        line_number = line.index + 1
+
+        func: Func | None = file_ast.locate_line(line_number)
+        if func:
+            changed_funcs.append(func)
+
+    # TODO: 简化
+    sorted_changed_funcs = []
+    for func in changed_funcs:
+        if func not in sorted_changed_funcs:
+            sorted_changed_funcs.append(func)
+
+    changed_funcs = sorted_changed_funcs
+
+    return changed_funcs

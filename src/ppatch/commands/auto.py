@@ -19,7 +19,12 @@ from ppatch.model import (
 )
 from ppatch.utils.ast import File as FileAST
 from ppatch.utils.ast import Func
-from ppatch.utils.common import match_file_patterns, process_json_config, process_title
+from ppatch.utils.common import (
+    get_changed_funcs,
+    match_file_patterns,
+    process_json_config,
+    process_title,
+)
 from ppatch.utils.parse import changes_to_hunks, parse_patch
 from ppatch.utils.resolve import apply_change
 
@@ -285,26 +290,9 @@ def auto(
         # 2. 搜索这些行在在 patched_text 中属于哪些函数的范围，如果不是函数则不处理
         # 3. 在这些函数的起始位置添加 printk
         if oracle:
-            changed_funcs: list[Func] = []
-
             file_ast = FileAST(content=patched_text)
 
-            changed_lines = [line for line in line_list if line.changed]
-
-            for line in changed_lines:
-                line_number = line.index + 1
-
-                func: Func | None = file_ast.locate_line(line_number)
-                if func:
-                    changed_funcs.append(func)
-
-            # TODO: 简化
-            sorted_changed_funcs = []
-            for func in changed_funcs:
-                if func not in sorted_changed_funcs:
-                    sorted_changed_funcs.append(func)
-
-            changed_funcs = sorted_changed_funcs
+            changed_funcs: list[Func] = get_changed_funcs(line_list, file_ast)
 
             for func in changed_funcs:
                 # 从 start_line 开始读取，读取到的第一个 '{' 之后插入一行 printk
