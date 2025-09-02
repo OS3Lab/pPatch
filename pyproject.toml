@@ -1,6 +1,6 @@
 [project]
 name = "ppatch"
-version = "0.0.6b2"
+version = "0.0.6b2.post1"
 description = "Universal tool to analyze patches"
 authors = [
     {name = "jingfelix", email = "jingfelix@outlook.com"},
