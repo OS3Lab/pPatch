@@ -58,8 +58,29 @@ def check(
     old_funcs = FileAST(original_file).funcs
     # new_funcs = FileAST(current_file).funcs
 
+    old_changed_func_names = [func["name"] for func in old_changed_funcs]
+    old_func_names = [func["name"] for func in old_funcs]
+
+    new_changed_func_names = [func["name"] for func in new_changed_funcs]
+    new_func_names = [func["name"] for func in FileAST(current_file).funcs]
+
     for func in new_changed_funcs:
-        if func not in old_changed_funcs:
+        if func["name"] not in old_changed_func_names:
+            print(f"Warning: found new changed function {func['name']}")
             # Check if the function actually exists in the old file
-            if func in old_funcs:
-                print(f"Warning: found inconsistent changed function {func.name}")
+            if func["name"] in old_func_names:
+                print(f"Warning: found inconsistent changed function {func['name']}")
+
+    # for func in old_changed_funcs:
+    #     if func["name"] not in new_changed_func_names:
+    #         print(f"Warning: found missing changed function {func['name']}")
+    #         # Check if the function actually exists in the new file
+    #         if func["name"] not in new_func_names:
+    #             print(f"Warning: found inconsistent changed function {func['name']}")
+
+    # for func in old_funcs:
+    #     if func["name"] == "hci_get_route" or func["name"] == "hci_conn_enter_active_mode":
+    #         print(f"Warning: found changed function {func['name']}")
+
+
+check(original_file, original_patch, current_file, current_patch)
