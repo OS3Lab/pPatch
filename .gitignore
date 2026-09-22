@@ -166,3 +166,6 @@ patches/
 .pdm-python
 
 .vscode
+
+linux-stable/
+kernel-euler/

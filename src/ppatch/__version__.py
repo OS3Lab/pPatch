@@ -6,4 +6,7 @@ else:
     import importlib_metadata
 
 
-__version__ = importlib_metadata.version("ppatch")
+try:
+    __version__ = importlib_metadata.version("ppatch")
+except importlib_metadata.PackageNotFoundError:
+    __version__ = "0.0.0"
