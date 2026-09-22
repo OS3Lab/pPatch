@@ -107,54 +107,51 @@ def apply(
 
                 raise typer.Exit(code=2)
 
-            # 写入文件
-            if not has_failed:
-                if function_check:
-                    # Note that file won't be saved if function_check is True
+            # 写入文件：与 GNU patch 一致，成功 hunk 即使存在失败 hunk 也会落盘
+            if function_check:
+                # Note that file won't be saved if function_check is True
 
-                    # 记录当前修改所属的函数列表和所有函数列表
-                    patched_text = "\n".join([line.content for line in new_line_list])
-                    file_ast = FileAST(patched_text)
+                # 记录当前修改所属的函数列表和所有函数列表
+                patched_text = "\n".join([line.content for line in new_line_list])
+                file_ast = FileAST(patched_text)
 
-                    patched_all_funcs = file_ast.funcs
-                    patched_changed_funcs = get_changed_funcs(new_line_list, file_ast)
+                patched_all_funcs = file_ast.funcs
+                patched_changed_funcs = get_changed_funcs(new_line_list, file_ast)
 
-                    # Get to the original file
-                    # git show sha:filename
-                    # 利用 sha_for_sure 获取指定 sha 的前一个 sha
-                    sha_for_sure_index = sha_list.index(sha_for_sure)
-                    sha_before_sure = sha_list[
-                        sha_for_sure_index + 1
-                    ]  # TODO: check this
+                # Get to the original file
+                # git show sha:filename
+                # 利用 sha_for_sure 获取指定 sha 的前一个 sha
+                sha_for_sure_index = sha_list.index(sha_for_sure)
+                sha_before_sure = sha_list[sha_for_sure_index + 1]  # TODO: check this
 
-                    before_original_file: str = subprocess.run(
-                        [
-                            "git",
-                            "show",
-                            f"{sha_before_sure}:{diff.header.old_path}",
-                        ],  # No need to distinguish reverse here
-                        capture_output=True,
-                    ).stdout.decode("utf-8", errors="ignore")
+                before_original_file: str = subprocess.run(
+                    [
+                        "git",
+                        "show",
+                        f"{sha_before_sure}:{diff.header.old_path}",
+                    ],  # No need to distinguish reverse here
+                    capture_output=True,
+                ).stdout.decode("utf-8", errors="ignore")
 
-                    # 尝试 apply 原补丁来确定原始修改所属的函数
-                    original_file_line_list = apply_change(
-                        diff.hunks,
-                        File(content=before_original_file).line_list,
-                        reverse=reverse,
-                        fuzz=fuzz,
-                    ).new_line_list
+                # 尝试 apply 原补丁来确定原始修改所属的函数
+                original_file_line_list = apply_change(
+                    diff.hunks,
+                    File(content=before_original_file).line_list,
+                    reverse=reverse,
+                    fuzz=fuzz,
+                ).new_line_list
 
-                    original_file_ast = FileAST(before_original_file)
-                    original_changed_funcs = get_changed_funcs(
-                        original_file_line_list, original_file_ast
-                    )
+                original_file_ast = FileAST(before_original_file)
+                original_changed_funcs = get_changed_funcs(
+                    original_file_line_list, original_file_ast
+                )
 
-                    logger.info(f"Patched changed funcs: {patched_changed_funcs}")
-                    logger.info(f"Original changed funcs: {original_changed_funcs}")
+                logger.info(f"Patched changed funcs: {patched_changed_funcs}")
+                logger.info(f"Original changed funcs: {original_changed_funcs}")
 
-                with open(new_filename, mode="w+", encoding="utf-8") as f:
-                    for line in new_line_list:
-                        if line.status:
-                            f.write(line.content + "\n")
+            with open(new_filename, mode="w+", encoding="utf-8") as f:
+                for line in new_line_list:
+                    if line.status:
+                        f.write(line.content + "\n")
 
     raise typer.Exit(code=1 if has_failed else 0)
