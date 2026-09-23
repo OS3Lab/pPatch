@@ -24,12 +24,22 @@ class Line(BaseModel):
 
 
 class File(object):
-    def __init__(self, file_path: str) -> None:
+    def __init__(self, file_path: str = "", content: str = "") -> None:
         self.line_list: list[Line] = []
 
-        with open(file_path, mode="r", encoding="utf-8", errors="ignore") as f:
-            for i, line in enumerate(f):
-                self.line_list.append(Line(index=i, content=line.rstrip("\n")))
+        if not file_path and not content:
+            raise ValueError("Either file_path or content must be provided")
+
+        if content:
+            self.line_list = [
+                Line(index=i, content=line.rstrip("\n"))
+                for i, line in enumerate(content.splitlines())
+            ]
+
+        elif file_path:
+            with open(file_path, mode="r", encoding="utf-8", errors="ignore") as f:
+                for i, line in enumerate(f):
+                    self.line_list.append(Line(index=i, content=line.rstrip("\n")))
 
     def __str__(self) -> str:
         return "".join([str(line) for line in self.line_list])

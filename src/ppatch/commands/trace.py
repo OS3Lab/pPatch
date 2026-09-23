@@ -11,7 +11,7 @@ from ppatch.utils.parse import wtp_diff_to_diff
 from ppatch.utils.resolve import apply_change
 
 
-@app.command()
+@app.command(name="trace")
 def trace_command(
     filename: str, from_commit: str = "", flag_hunk_list: list[int] = None
 ) -> dict[str, ApplyResult]:

@@ -31,6 +31,8 @@ shellingham==1.5.4
 stack-data==0.6.3; python_version > "3.6"
 tomli==2.2.1; python_version > "3.6" and python_version < "3.11"
 traitlets==5.14.3; python_version > "3.6"
+tree-sitter==0.24.0
+tree-sitter-c==0.23.2
 typer[all]==0.15.1
 typing-extensions==4.12.2
 viztracer==1.0.0

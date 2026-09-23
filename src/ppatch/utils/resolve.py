@@ -26,8 +26,8 @@ def apply_change(
 
     # TODO: 注意，修改了该函数后，需要将此处修改为对 hunk 内的 change 进行修改
     if reverse:
-        if flag:
-            raise Exception("flag is not supported with reverse")
+        # if flag:
+        #     raise Exception("flag is not supported with reverse")
 
         for hunk in hunk_list:
             for change in hunk.context + hunk.middle + hunk.post:
@@ -37,10 +37,17 @@ def apply_change(
     changes: list[Change] = []
     failed_hunk_list: list[Hunk] = []
     last_pos = None
-
-    last_offset = 0
-    line_count_diff = 0
+    # 上一个成功 hunk 的定位偏移，加上该 hunk 的净行数变化。
+    # 供后续无法用上下文定位的 hunk（fuzz 后只剩新增行）使用，对齐 GNU patch 的 last_offset。
+    carry_offset = 0
     for hunk in hunk_list:
+
+        orig_context_len = len(hunk.context)
+        orig_start = None
+        for change in list(hunk.context) + hunk.middle + list(hunk.post):
+            if change.old is not None:
+                orig_start = change.old
+                break
 
         current_hunk_fuzz = 0
 
@@ -76,28 +83,27 @@ def apply_change(
                 pos_origin = change.old
                 break
 
-        # TODO: 这里不太对，要想一下怎么处理，不应该是加入 failed hunk list
-        # 仅在 -F 3 且只有添加行 的情况下出现（指与 GNU patch 行为不一致）
-        # 也可以看一下这样的情况有多少
-        if current_hunk_fuzz == fuzz and not pos_origin:
-            # failed_hunk_list.append(hunk)
-            # logger.debug(f"Could not determine pos_origin")
-            # logger.warning(f"Apply failed with hunk {hunk.index}")
-            # continue
-            for change in changes_to_search:
-                if change.new is not None:
-                    pos_origin = change.new
-                    break
+        # fuzz 把上下文剥光后只剩新增行时，没有 old 行可搜索。
+        # GNU patch 仍按 hunk 起始行 + 此前偏移插入，插入点在前置上下文之后。
+        anchorless = pos_origin is None
+        if anchorless and not (reverse and orig_start is not None):
+            failed_hunk_list.append(hunk)
+            logger.debug(f"Could not determine pos_origin")
+            logger.warning(f"Apply failed with hunk {hunk.index}")
+            continue
 
-            # 使用上一次偏移加上行数变化差值
-            min_offset = last_offset
+        if not anchorless and len(pos_list) == 0:
+            failed_hunk_list.append(hunk)
+            logger.debug(f"Could not determine proper position")
+            logger.warning(f"Apply failed with hunk {hunk.index}")
+            continue
+
+        if anchorless:
+            min_offset = carry_offset
+            pos_new = orig_start + carry_offset + orig_context_len - 1
+            if pos_new < 0:
+                pos_new = 0
         else:
-            if len(pos_list) == 0:
-                failed_hunk_list.append(hunk)
-                logger.debug(f"Could not determine proper position")
-                logger.warning(f"Apply failed with hunk {hunk.index}")
-                continue
-
             offset_list = [
                 pos + 1 - pos_origin for pos in pos_list
             ]  # 确认这里是否需要 1？
@@ -108,26 +114,12 @@ def apply_change(
                 if min_offset is None or abs(offset) < abs(min_offset):
                     min_offset = offset
 
-            if reverse:
-                min_offset += line_count_diff
-                pos_origin -= line_count_diff
-
-        last_offset = min_offset
-
-        # 更新行数变化差值
-        hunk_add_count = sum(
-            1 for c in changes_to_search if c.old is None and c.new is not None
-        )
-        hunk_del_count = sum(
-            1 for c in changes_to_search if c.new is None and c.old is not None
-        )
-        line_count_diff += hunk_del_count - hunk_add_count
+            pos_new = pos_origin + min_offset - 1
 
         logger.info(
-            f"Apply hunk {hunk.index} with offset {min_offset} fuzz {current_hunk_fuzz} line_diff {line_count_diff}"
+            f"Apply hunk {hunk.index} with offset {min_offset} fuzz {current_hunk_fuzz}"
         )
 
-        pos_new = pos_origin + min_offset - 1
         # 处理 pos_new 小于 last_pos 的情况
         logger.debug(f"pos_origin: {pos_origin}, last_pos: {last_pos}")
         if last_pos is None:
@@ -169,11 +161,18 @@ def apply_change(
             target = (
                 target[:pos_new]
                 + [
-                    Line(index=pos_new + i, content=new_lines[i])
+                    Line(
+                        index=pos_new + i,
+                        content=new_lines[i],
+                        changed=True,
+                        flag=flag,
+                        hunk=hunk.index,
+                    )
                     for i in range(len(new_lines))
                 ]
                 + target[pos_new + len(old_lines) :]
             )
+            carry_offset = min_offset + (len(new_lines) - len(old_lines))
 
         else:
             for change in hunk.middle:

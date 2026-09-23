@@ -1,3 +1,4 @@
+import fnmatch
 import json
 import re
 import subprocess
@@ -5,7 +6,9 @@ from collections import defaultdict
 from typing import Any
 
 from ppatch.app import logger
-from ppatch.model import CommandResult, CommandType
+from ppatch.model import CommandResult, CommandType, Line
+from ppatch.utils.ast import File as FileAST
+from ppatch.utils.ast import Func
 
 
 def clean_repo():
@@ -37,12 +40,12 @@ def process_file_path(file_path: str, reverse: bool = False) -> str:
         return file_path.replace("/", "&#")
 
 
-def find_list_positions(main_list: list[str], sublist: list[str]) -> list[int]:
-    sublist_length = len(sublist)
+def find_list_positions(main_list: list[str], sub_list: list[str]) -> list[int]:
+    sublist_length = len(sub_list)
     positions = []
 
     for i in range(len(main_list) - sublist_length + 1):
-        if main_list[i : i + sublist_length] == sublist:
+        if main_list[i : i + sublist_length] == sub_list:
             positions.append(i)
 
     return positions
@@ -106,6 +109,8 @@ def process_json_config(input_file: str) -> dict[str:list]:
         if kind == "error" and message and file_name:
             # 使用正则表达式提取变量
             symbols = re.findall(r"‘(.*?)’", message)
+            symbols.extend(re.findall(r"'(.*?)'", message))  # When to use ``?
+
             new_data.append(
                 {
                     "kind": kind,
@@ -129,3 +134,44 @@ def process_json_config(input_file: str) -> dict[str:list]:
     result = {file: list(symbols) for file, symbols in merged_data.items()}
 
     return result
+
+
+def match_file_patterns(filename: str, patterns: list[str]) -> bool:
+    """
+    Check if the filename matches any of the patterns
+
+    Args:
+        filename: file name
+        patterns: list of wildcard patterns
+
+    Returns:
+        Returns True if the filename matches any pattern, otherwise returns False
+    """
+    return any(fnmatch.fnmatch(filename, pattern) for pattern in patterns)
+
+
+def get_changed_funcs(line_list: list[Line], file_ast: FileAST) -> list[Func]:
+    """
+    line_list: list of changed lines, each line is a Line object with .changed attribute
+    file_ast: FileAST object representing the file's AST
+    """
+
+    changed_lines: list[Line] = [line for line in line_list if line.changed]
+    changed_funcs: list[Func] = []
+
+    for line in changed_lines:
+        line_number = line.index + 1
+
+        func: Func | None = file_ast.locate_line(line_number)
+        if func:
+            changed_funcs.append(func)
+
+    # TODO: 简化
+    sorted_changed_funcs = []
+    for func in changed_funcs:
+        if func not in sorted_changed_funcs:
+            sorted_changed_funcs.append(func)
+
+    changed_funcs = sorted_changed_funcs
+
+    return changed_funcs

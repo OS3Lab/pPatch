@@ -23,6 +23,7 @@ class Settings(BaseSettings):
     patch_store_dir: str = "_patches"
     max_diff_lines: int = 3
     work_dir: str = os.path.abspath(os.getcwd())
+    include_file_list: list[str] = ["*.c", "*.h", "*.cpp", "*.hpp", "*.cc", "*.hh"]
 
     class Config:
         env_file = os.path.join(os.environ.get("HOME"), ".ppatch.env")

@@ -5,7 +5,7 @@
 groups = ["default", "dev"]
 strategy = ["inherit_metadata"]
 lock_version = "4.5.0"
-content_hash = "sha256:838eb6c6f611048bd6715fbdf796cbb900f404bfe053b4b8ac5d784265850b95"
+content_hash = "sha256:b2a865c729a9a1851ef91c1f81da1996e532e115bcd4afaf64895c51469e6ef7"
 
 [[metadata.targets]]
 requires_python = ">=3.10"
@@ -523,6 +523,61 @@ marker = "python_version > \"3.6\""
 files = [
     {file = "traitlets-5.14.3-py3-none-any.whl", hash = "sha256:b74e89e397b1ed28cc831db7aea759ba6640cb3de13090ca145426688ff1ac4f"},
     {file = "traitlets-5.14.3.tar.gz", hash = "sha256:9ed0579d3502c94b4b3732ac120375cda96f923114522847de4b3bb98b96b6b7"},
+]
+
+[[package]]
+name = "tree-sitter"
+version = "0.24.0"
+requires_python = ">=3.10"
+summary = "Python bindings to the Tree-sitter parsing library"
+groups = ["default"]
+files = [
+    {file = "tree-sitter-0.24.0.tar.gz", hash = "sha256:abd95af65ca2f4f7eca356343391ed669e764f37748b5352946f00f7fc78e734"},
+    {file = "tree_sitter-0.24.0-cp310-cp310-macosx_10_9_x86_64.whl", hash = "sha256:f3f00feff1fc47a8e4863561b8da8f5e023d382dd31ed3e43cd11d4cae445445"},
+    {file = "tree_sitter-0.24.0-cp310-cp310-macosx_11_0_arm64.whl", hash = "sha256:f9691be48d98c49ef8f498460278884c666b44129222ed6217477dffad5d4831"},
+    {file = "tree_sitter-0.24.0-cp310-cp310-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:098a81df9f89cf254d92c1cd0660a838593f85d7505b28249216661d87adde4a"},
+    {file = "tree_sitter-0.24.0-cp310-cp310-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:0b26bf9e958da6eb7e74a081aab9d9c7d05f9baeaa830dbb67481898fd16f1f5"},
+    {file = "tree_sitter-0.24.0-cp310-cp310-musllinux_1_2_x86_64.whl", hash = "sha256:2a84ff87a2f2a008867a1064aba510ab3bd608e3e0cd6e8fef0379efee266c73"},
+    {file = "tree_sitter-0.24.0-cp310-cp310-win_amd64.whl", hash = "sha256:c012e4c345c57a95d92ab5a890c637aaa51ab3b7ff25ed7069834b1087361c95"},
+    {file = "tree_sitter-0.24.0-cp310-cp310-win_arm64.whl", hash = "sha256:033506c1bc2ba7bd559b23a6bdbeaf1127cee3c68a094b82396718596dfe98bc"},
+    {file = "tree_sitter-0.24.0-cp311-cp311-macosx_10_9_x86_64.whl", hash = "sha256:de0fb7c18c6068cacff46250c0a0473e8fc74d673e3e86555f131c2c1346fb13"},
+    {file = "tree_sitter-0.24.0-cp311-cp311-macosx_11_0_arm64.whl", hash = "sha256:a7c9c89666dea2ce2b2bf98e75f429d2876c569fab966afefdcd71974c6d8538"},
+    {file = "tree_sitter-0.24.0-cp311-cp311-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:4ddb113e6b8b3e3b199695b1492a47d87d06c538e63050823d90ef13cac585fd"},
+    {file = "tree_sitter-0.24.0-cp311-cp311-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:01ea01a7003b88b92f7f875da6ba9d5d741e0c84bb1bd92c503c0eecd0ee6409"},
+    {file = "tree_sitter-0.24.0-cp311-cp311-musllinux_1_2_x86_64.whl", hash = "sha256:464fa5b2cac63608915a9de8a6efd67a4da1929e603ea86abaeae2cb1fe89921"},
+    {file = "tree_sitter-0.24.0-cp311-cp311-win_amd64.whl", hash = "sha256:3b1f3cbd9700e1fba0be2e7d801527e37c49fc02dc140714669144ef6ab58dce"},
+    {file = "tree_sitter-0.24.0-cp311-cp311-win_arm64.whl", hash = "sha256:f3f08a2ca9f600b3758792ba2406971665ffbad810847398d180c48cee174ee2"},
+    {file = "tree_sitter-0.24.0-cp312-cp312-macosx_10_13_x86_64.whl", hash = "sha256:14beeff5f11e223c37be7d5d119819880601a80d0399abe8c738ae2288804afc"},
+    {file = "tree_sitter-0.24.0-cp312-cp312-macosx_11_0_arm64.whl", hash = "sha256:26a5b130f70d5925d67b47db314da209063664585a2fd36fa69e0717738efaf4"},
+    {file = "tree_sitter-0.24.0-cp312-cp312-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:5fc5c3c26d83c9d0ecb4fc4304fba35f034b7761d35286b936c1db1217558b4e"},
+    {file = "tree_sitter-0.24.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:772e1bd8c0931c866b848d0369b32218ac97c24b04790ec4b0e409901945dd8e"},
+    {file = "tree_sitter-0.24.0-cp312-cp312-musllinux_1_2_x86_64.whl", hash = "sha256:24a8dd03b0d6b8812425f3b84d2f4763322684e38baf74e5bb766128b5633dc7"},
+    {file = "tree_sitter-0.24.0-cp312-cp312-win_amd64.whl", hash = "sha256:f9e8b1605ab60ed43803100f067eed71b0b0e6c1fb9860a262727dbfbbb74751"},
+    {file = "tree_sitter-0.24.0-cp312-cp312-win_arm64.whl", hash = "sha256:f733a83d8355fc95561582b66bbea92ffd365c5d7a665bc9ebd25e049c2b2abb"},
+    {file = "tree_sitter-0.24.0-cp313-cp313-macosx_10_13_x86_64.whl", hash = "sha256:0d4a6416ed421c4210f0ca405a4834d5ccfbb8ad6692d4d74f7773ef68f92071"},
+    {file = "tree_sitter-0.24.0-cp313-cp313-macosx_11_0_arm64.whl", hash = "sha256:e0992d483677e71d5c5d37f30dfb2e3afec2f932a9c53eec4fca13869b788c6c"},
+    {file = "tree_sitter-0.24.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:57277a12fbcefb1c8b206186068d456c600dbfbc3fd6c76968ee22614c5cd5ad"},
+    {file = "tree_sitter-0.24.0-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:d25fa22766d63f73716c6fec1a31ee5cf904aa429484256bd5fdf5259051ed74"},
+    {file = "tree_sitter-0.24.0-cp313-cp313-musllinux_1_2_x86_64.whl", hash = "sha256:7d5d9537507e1c8c5fa9935b34f320bfec4114d675e028f3ad94f11cf9db37b9"},
+    {file = "tree_sitter-0.24.0-cp313-cp313-win_amd64.whl", hash = "sha256:f58bb4956917715ec4d5a28681829a8dad5c342cafd4aea269f9132a83ca9b34"},
+    {file = "tree_sitter-0.24.0-cp313-cp313-win_arm64.whl", hash = "sha256:23641bd25dcd4bb0b6fa91b8fb3f46cc9f1c9f475efe4d536d3f1f688d1b84c8"},
+]
+
+[[package]]
+name = "tree-sitter-c"
+version = "0.23.2"
+requires_python = ">=3.9"
+summary = "C grammar for tree-sitter"
+groups = ["default"]
+files = [
+    {file = "tree_sitter_c-0.23.2-cp39-abi3-macosx_10_9_x86_64.whl", hash = "sha256:0e8c60630a34e6fa0680b10df984c6f9dd48a5ef0ea8a564d3c5f0e0345d4489"},
+    {file = "tree_sitter_c-0.23.2-cp39-abi3-macosx_11_0_arm64.whl", hash = "sha256:ffcaab20e65a4d29a635c978b22a12e4d8ffe9dc5adc35860e3982a929e6c438"},
+    {file = "tree_sitter_c-0.23.2-cp39-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:b40205ef5919d32083ad7eea13882c7f8bc85281c1a6672ed2b3543f18b7aad6"},
+    {file = "tree_sitter_c-0.23.2-cp39-abi3-manylinux_2_5_x86_64.manylinux1_x86_64.manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:47ba5b66cfab7f38549d571170069ef2d877e9468177fa5bea9b5fe1fd52badc"},
+    {file = "tree_sitter_c-0.23.2-cp39-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:926c6da41f3943a08eebf96d1d3bc71c9c0181a2c72d859a4e52f49ace691ff1"},
+    {file = "tree_sitter_c-0.23.2-cp39-abi3-win_amd64.whl", hash = "sha256:82167c253832e23e47413fbb06d572d53494b4d134e20eee372551da8fa4e931"},
+    {file = "tree_sitter_c-0.23.2-cp39-abi3-win_arm64.whl", hash = "sha256:5a5d54b27665f6596e6c10c6b2c7bc4c181428e3a235ccfe4e9237e27751c5c9"},
+    {file = "tree_sitter_c-0.23.2.tar.gz", hash = "sha256:ef7ecc95c170747aceccf13ae0e37e101f9ba25a639729be0f70222f2a02f99c"},
 ]
 
 [[package]]
